@@ -9,11 +9,6 @@ Source for every phase: `miditin 1 - spec.md` (§ numbers below) and the v2 prot
 Port behaviour from the prototype; do not reinvent it. Each phase ends with `./build.sh test` green
 and one commit per task.
 
-## Phase 0 -- foundation
-
-- [opus] `wiki/architecture.md`: threading, the audio-thread clock, voice pool, state split,
-  how the UI snapshot flows. Add it to the wiki routing table.
-
 ## Phase 1 -- state spine
 
 - [opus] `ParamRegistry` (single table, mepSynth pattern) for every continuous control in the

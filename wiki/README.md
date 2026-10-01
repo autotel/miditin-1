@@ -6,4 +6,5 @@ phase in `tasks.md` has durable knowledge to record, not before.
 
 | File | Covers |
 |---|---|
+| [architecture.md](architecture.md) | threads, the clock, voice pool, note tracking, params vs Patch |
 | [history.md](history.md) | decisions that were made and reversed, so they are not remade |
