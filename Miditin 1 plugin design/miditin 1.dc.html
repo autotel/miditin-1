@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#e4e0d6;} a{color:#1d1c1a;} a:hover{color:#dc6a48;} input[type=range]{accent-color:#1d1c1a;height:12px;margin:0;width:100%;min-width:0;} button{font-family:'IBM Plex Mono',monospace;}</style>
+</helmet>
+<div ref="{{ wrapRef }}" style="width:100%;padding:24px 0;box-sizing:border-box;overflow:hidden;font-family:'IBM Plex Mono',monospace;color:#1d1c1a;display:flex;justify-content:center;align-items:flex-start">
+<div ref="{{ stageRef }}" style="width:900px;box-sizing:border-box;flex:none;transform-origin:top center;background:#fbfaf6;border:1px solid #1d1c1a;box-shadow:0 18px 50px rgba(40,35,25,0.18)">
+
+<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid #1d1c1a;background:#fbfaf6">
+  <span style="font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:600;font-size:20px;letter-spacing:-0.01em">miditin 1</span>
+  <span style="font-size:9px;color:#8d887e;letter-spacing:0.05em">ENERGY → PULSE → GENERATE → TRANSFORM → MIDI</span>
+  <div style="flex:1"></div>
+  <button onClick="{{ togglePlay }}" style="font-size:10px;padding:5px 9px;border:1px solid #1d1c1a;background:{{ playBg }};color:{{ playFg }};cursor:pointer">{{ playTxt }}</button>
+  <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:#8d887e">BPM<input type="range" min="60" max="200" step="1" value="{{ bpm }}" onChange="{{ setBpm }}" style="width:70px"><span style="color:#1d1c1a;width:22px">{{ bpm }}</span></label>
+  <button onClick="{{ toggleSynth }}" style="font-size:10px;padding:5px 9px;border:1px solid #1d1c1a;background:{{ synthBg }};color:{{ synthFg }};cursor:pointer">SOUND {{ synthTxt }}</button>
+  <button onClick="{{ toggleMidi }}" style="font-size:10px;padding:5px 9px;border:1px solid #1d1c1a;background:{{ midiBg }};color:{{ midiFg }};cursor:pointer">MIDI {{ midiTxt }}</button>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid #1d1c1a">
+
+  <div style="border-right:1px solid #1d1c1a;display:flex;flex-direction:column;position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 10px;border-bottom:1px solid #1d1c1a"><span style="font-size:10px;font-weight:600;letter-spacing:0.08em">01 ENERGY</span><span style="font-size:9px;color:#8d887e">lfo</span></div>
+    <canvas ref="{{ lfoRef }}" style="width:204px;height:120px;display:block;margin:10px 10px 0"></canvas>
+    <div style="padding:10px;display:flex;flex-direction:column;gap:6px;flex:1">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#1d1c1a;border:1px solid #1d1c1a">
+        <sc-for list="{{ lsrcOpts }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.on }}" style="font-size:9px;padding:4px 0;border:none;background:{{ o.bg }};color:{{ o.fg }};cursor:pointer;text-transform:uppercase">{{ o.label }}</button></sc-for>
+      </div>
+      <sc-if value="{{ isOsc }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#1d1c1a;border:1px solid #1d1c1a">
+        <sc-for list="{{ shapeOpts }}" as="o" hint-placeholder-count="4"><button onClick="{{ o.on }}" style="font-size:9px;padding:3px 0;border:none;background:{{ o.bg }};color:{{ o.fg }};cursor:pointer;text-transform:uppercase">{{ o.label }}</button></sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">
+        <button onClick="{{ toggleSync }}" style="font-size:9px;padding:3px 0;border:1px solid #1d1c1a;background:{{ syncBg }};color:{{ syncFg }};cursor:pointer">SYNC {{ syncTxt }}</button>
+        <button onClick="{{ toggleRetrig }}" style="font-size:9px;padding:3px 0;border:1px solid #1d1c1a;background:{{ retrigBg }};color:{{ retrigFg }};cursor:pointer">RETRIG {{ retrigTxt }}</button>
+      </div>
+      <sc-if value="{{ notSync }}" hint-placeholder-val="{{ true }}">
+      <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">RATE</span><input type="range" min="0.02" max="3" step="0.01" value="{{ lRate }}" onChange="{{ setLRate }}"><span style="text-align:right">{{ lRateTxt }}</span></label>
+      </sc-if>
+      <sc-if value="{{ isSync }}" hint-placeholder-val="{{ false }}">
+      <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">CYCLE</span><input type="range" min="0" max="7" step="1" value="{{ lDiv }}" onChange="{{ setLDiv }}"><span style="text-align:right">{{ lDivTxt }}</span></label>
+      </sc-if>
+      </sc-if>
+      <sc-if value="{{ isVel }}" hint-placeholder-val="{{ false }}">
+      </sc-if>
+      <sc-if value="{{ isCC }}" hint-placeholder-val="{{ false }}">
+        <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">CC #</span><input type="range" min="0" max="119" step="1" value="{{ ccNum }}" onChange="{{ setCC }}"><span style="text-align:right">{{ ccNum }}</span></label>
+        <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">IN VAL</span><input type="range" min="0" max="127" step="1" value="{{ ccVal }}" onChange="{{ setCCVal }}"><span style="text-align:right">{{ ccVal }}</span></label>
+      </sc-if>
+      <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">CENTER</span><input type="range" min="0" max="1" step="0.01" value="{{ lBase }}" onChange="{{ setLBase }}"><span style="text-align:right">{{ lBaseTxt }}</span></label>
+      <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">DEPTH</span><input type="range" min="0" max="1" step="0.01" value="{{ lDepth }}" onChange="{{ setLDepth }}"><span style="text-align:right">{{ lDepthTxt }}</span></label>
+      <div style="display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">FILTER</span>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#1d1c1a;border:1px solid #1d1c1a">
+          <sc-for list="{{ filtOpts }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.on }}" style="font-size:9px;padding:3px 0;border:none;background:{{ o.bg }};color:{{ o.fg }};cursor:pointer;text-transform:uppercase">{{ o.label }}</button></sc-for>
+        </div>
+      </div>
+      <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">{{ amtLabel }}</span><input type="range" min="0" max="1" step="0.01" value="{{ lAmt }}" onChange="{{ setLAmt }}"><span style="text-align:right">{{ lAmtTxt }}</span></label>
+      <div style="flex:1"></div>
+      <div style="font-size:9px;color:#8d887e;border-top:1px dashed #cfc9bd;padding-top:6px">out → energy 0..1</div>
+    </div>
+  </div>
+
+
+  <div style="border-right:1px solid #1d1c1a;display:flex;flex-direction:column;position:relative"><div ref="{{ c1Ref }}" style="position:absolute;left:-5px;top:94px;width:9px;height:9px;border-radius:50%;background:#dc6a48;opacity:0.2;z-index:2"></div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 10px;border-bottom:1px solid #1d1c1a"><span style="font-size:10px;font-weight:600;letter-spacing:0.08em">02 PULSE</span><span style="font-size:9px;color:#8d887e">{{ source }}</span></div>
+    <canvas ref="{{ pulseRef }}" style="width:204px;height:120px;display:block;margin:10px 10px 0"></canvas>
+    <div style="padding:10px;display:flex;flex-direction:column;gap:6px;flex:1">
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:#1d1c1a;border:1px solid #1d1c1a">
+        <sc-for list="{{ srcOpts }}" as="o" hint-placeholder-count="4"><button onClick="{{ o.on }}" style="font-size:9px;padding:4px 0;border:none;background:{{ o.bg }};color:{{ o.fg }};cursor:pointer;text-transform:uppercase;letter-spacing:0.04em">{{ o.label }}</button></sc-for>
+      </div>
+      <sc-if value="{{ isWheel }}" hint-placeholder-val="{{ true }}">
+        <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">SLICES</span><input type="range" min="3" max="24" step="1" value="{{ slices }}" onChange="{{ setSlices }}"><span style="text-align:right">{{ slices }}</span></label>
+        <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">SPEED</span><input type="range" min="0.05" max="2" step="0.01" value="{{ maxSpeed }}" onChange="{{ setMaxSpeed }}"><span style="text-align:right">{{ maxSpeedTxt }}</span></label>
+        <button onClick="{{ kick }}" style="font-size:9px;padding:5px 0;border:1px solid #1d1c1a;background:#fbfaf6;cursor:pointer;letter-spacing:0.06em">SPIN ↻</button>
+      </sc-if>
+      <sc-if value="{{ isShaker }}" hint-placeholder-val="{{ false }}">
+        <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">AGITATE</span><input type="range" min="0" max="1" step="0.01" value="{{ agit }}" onChange="{{ setAgit }}"><span style="text-align:right">{{ agitTxt }}</span></label>
+        <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">BALLS</span><input type="range" min="1" max="12" step="1" value="{{ balls }}" onChange="{{ setBalls }}"><span style="text-align:right">{{ balls }}</span></label>
+        <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">BOUNCE</span><input type="range" min="0.3" max="0.98" step="0.01" value="{{ restitution }}" onChange="{{ setRestitution }}"><span style="text-align:right">{{ restitutionTxt }}</span></label>
+        <button onClick="{{ kick }}" style="font-size:9px;padding:5px 0;border:1px solid #1d1c1a;background:#fbfaf6;cursor:pointer;letter-spacing:0.06em">SHAKE ⇄</button>
+      </sc-if>
+      <sc-if value="{{ isDigital }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">BASE</span>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#1d1c1a;border:1px solid #1d1c1a">
+            <sc-for list="{{ baseOpts }}" as="o" hint-placeholder-count="4"><button onClick="{{ o.on }}" style="font-size:9px;padding:3px 0;border:none;background:{{ o.bg }};color:{{ o.fg }};cursor:pointer">{{ o.label }}</button></sc-for>
+          </div>
+        </div>
+        <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">DIV</span><input type="range" min="0" max="4" step="1" value="{{ digDiv }}" onChange="{{ setDigDiv }}"><span style="text-align:right">{{ digDivTxt }}</span></label>
+        <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">SWING</span><input type="range" min="0" max="0.6" step="0.01" value="{{ swing }}" onChange="{{ setSwing }}"><span style="text-align:right">{{ swingTxt }}</span></label>
+      </sc-if>
+      <sc-if value="{{ notNone }}" hint-placeholder-val="{{ true }}">
+        <div style="border-top:1px dashed #cfc9bd;padding-top:6px;display:flex;flex-direction:column;gap:6px">
+          <div style="display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">ENERGY</span>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:#1d1c1a;border:1px solid #1d1c1a">
+              <sc-for list="{{ modOpts }}" as="o" hint-placeholder-count="2"><button onClick="{{ o.on }}" style="font-size:9px;padding:3px 0;border:none;background:{{ o.bg }};color:{{ o.fg }};cursor:pointer;text-transform:uppercase">{{ o.label }}</button></sc-for>
+            </div>
+          </div>
+          <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">OFFSET</span><input type="range" min="-1" max="1" step="0.01" value="{{ modOff }}" onChange="{{ setModOff }}"><span style="text-align:right">{{ modOffTxt }}</span></label>
+          <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">SCALE</span><input type="range" min="-2" max="2" step="0.01" value="{{ modScl }}" onChange="{{ setModScl }}"><span style="text-align:right">{{ modSclTxt }}</span></label>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isNone }}" hint-placeholder-val="{{ false }}">
+      </sc-if>
+      <div style="flex:1"></div>
+      <div style="font-size:9px;color:#8d887e;border-top:1px dashed #cfc9bd;padding-top:6px">out → pulse + velocity</div>
+    </div>
+  </div>
+
+
+  <div style="border-right:1px solid #1d1c1a;display:flex;flex-direction:column;position:relative"><div ref="{{ c2Ref }}" style="position:absolute;left:-5px;top:94px;width:9px;height:9px;border-radius:50%;background:#dc6a48;opacity:0.2;z-index:2"></div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 10px;border-bottom:1px solid #1d1c1a"><span style="font-size:10px;font-weight:600;letter-spacing:0.08em">03 GENERATE</span><span style="font-size:9px;color:#8d887e">{{ gen }}</span></div>
+    <canvas ref="{{ genRef }}" onPointerDown="{{ genDown }}" onPointerMove="{{ genMove }}" style="width:204px;height:120px;display:block;margin:10px 10px 0;cursor:{{ genCursor }};touch-action:none"></canvas>
+    <div style="padding:10px;display:flex;flex-direction:column;gap:6px;flex:1">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#1d1c1a;border:1px solid #1d1c1a">
+        <sc-for list="{{ genOpts }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.on }}" style="font-size:9px;padding:4px 0;border:none;background:{{ o.bg }};color:{{ o.fg }};cursor:pointer;text-transform:uppercase;letter-spacing:0.04em">{{ o.label }}</button></sc-for>
+      </div>
+      <sc-if value="{{ isArp }}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{ isTones }}" hint-placeholder-val="{{ true }}"><label style="display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">TONES</span><input value="{{ arpText }}" onChange="{{ setArpText }}" style="font:inherit;font-size:11px;border:1px solid #1d1c1a;background:#ffffff;padding:3px 6px;width:100%;box-sizing:border-box;outline:none;min-width:0"></label></sc-if>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:#1d1c1a;border:1px solid #1d1c1a">
+          <sc-for list="{{ orderOpts }}" as="o" hint-placeholder-count="5"><button onClick="{{ o.on }}" style="font-size:8px;padding:4px 0;border:none;background:{{ o.bg }};color:{{ o.fg }};cursor:pointer;text-transform:uppercase">{{ o.label }}</button></sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isMel }}" hint-placeholder-val="{{ false }}">
+        <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">LENGTH</span><input type="range" min="2" max="16" step="1" value="{{ melLen }}" onChange="{{ setMelLen }}"><span style="text-align:right">{{ melLen }}</span></label>
+        <div style="display:flex;gap:6px;align-items:center;font-size:9px;color:#8d887e"><span style="flex:1"></span><button onClick="{{ clearMel }}" style="font-size:9px;padding:3px 6px;border:1px solid #1d1c1a;background:#fbfaf6;cursor:pointer">CLEAR</button></div>
+      </sc-if>
+      <div style="display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">RUN</span>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:#1d1c1a;border:1px solid #1d1c1a">
+          <sc-for list="{{ modeOpts }}" as="o" hint-placeholder-count="2"><button onClick="{{ o.on }}" style="font-size:8px;padding:4px 0;border:none;background:{{ o.bg }};color:{{ o.fg }};cursor:pointer;text-transform:uppercase">{{ o.label }}</button></sc-for>
+        </div>
+      </div>
+      <div style="flex:1"></div>
+      <div style="font-size:9px;color:#8d887e;border-top:1px dashed #cfc9bd;padding-top:6px">out → relative tone (int)</div>
+    </div>
+  </div>
+
+
+  <div style="display:flex;flex-direction:column;position:relative"><div ref="{{ c3Ref }}" style="position:absolute;left:-5px;top:94px;width:9px;height:9px;border-radius:50%;background:#dc6a48;opacity:0.2;z-index:2"></div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 10px;border-bottom:1px solid #1d1c1a"><span style="font-size:10px;font-weight:600;letter-spacing:0.08em">04 TRANSFORM</span><span style="font-size:9px;color:#8d887e">{{ tmode }}</span></div>
+    <canvas ref="{{ transRef }}" onPointerDown="{{ transDown }}" style="width:204px;height:120px;display:block;margin:10px 10px 0;cursor:{{ transCursor }}"></canvas>
+    <div style="padding:10px;display:flex;flex-direction:column;gap:6px;flex:1">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#1d1c1a;border:1px solid #1d1c1a">
+        <sc-for list="{{ tOpts }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.on }}" style="font-size:9px;padding:4px 0;border:none;background:{{ o.bg }};color:{{ o.fg }};cursor:pointer;text-transform:uppercase">{{ o.label }}</button></sc-for>
+      </div>
+      <sc-if value="{{ isSetMode }}" hint-placeholder-val="{{ false }}">
+        <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">OCT LEN</span><input type="range" min="1" max="24" step="1" value="{{ period }}" onChange="{{ setPeriod }}"><span style="text-align:right">{{ period }}st</span></label>
+      </sc-if>
+      <button onClick="{{ toggleWrap }}" style="font-size:9px;padding:3px 0;border:1px solid #1d1c1a;background:{{ wrapBg }};color:{{ wrapFg }};cursor:pointer">OCTAVE WRAP {{ wrapTxt }}</button>
+      <sc-if value="{{ isScale }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#1d1c1a;border:1px solid #1d1c1a">
+          <sc-for list="{{ scaleOpts }}" as="o" hint-placeholder-count="8"><button onClick="{{ o.on }}" style="font-size:8px;padding:3px 0;border:none;background:{{ o.bg }};color:{{ o.fg }};cursor:pointer">{{ o.label }}</button></sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ showPcs }}" hint-placeholder-val="{{ true }}">
+        <label style="display:grid;grid-template-columns:42px minmax(0,1fr) 36px;align-items:center;gap:6px;font-size:9px"><span style="color:#8d887e">OCTAVE</span><input type="range" min="1" max="7" step="{{ octStep }}" value="{{ octave }}" onChange="{{ setOctave }}"><span style="text-align:right">{{ octTxt }}</span></label>
+      </sc-if>
+      <sc-if value="{{ isHeld }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:9px;color:#8d887e">{{ heldTxt }}</div>
+      </sc-if>
+      <div style="flex:1"></div>
+      <div style="font-size:9px;color:#8d887e;border-top:1px dashed #cfc9bd;padding-top:6px">out → midi note</div>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr))">
+  <div style="border-right:1px solid #1d1c1a">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 10px;border-bottom:1px solid #1d1c1a"><span style="font-size:10px;font-weight:600;letter-spacing:0.08em">IN</span><span style="font-size:9px;color:#8d887e">→ {{ inFeeds }}</span></div>
+    <canvas ref="{{ inRef }}" onPointerDown="{{ inDown }}" style="width:429px;height:44px;display:block;margin:10px 10px 0;cursor:pointer"></canvas>
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;font-size:9px">
+      <span style="color:#8d887e">HELD</span><span style="flex:1">{{ heldTxt }}</span>
+      <button onClick="{{ clearHeld }}" style="font-size:9px;padding:3px 6px;border:1px solid #1d1c1a;background:#fbfaf6;cursor:pointer">RELEASE ALL</button>
+    </div>
+  </div>
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 10px;border-bottom:1px solid #1d1c1a"><span style="font-size:10px;font-weight:600;letter-spacing:0.08em">OUT</span><span style="font-size:9px;color:#8d887e">{{ outName }}</span></div>
+    <canvas ref="{{ outRef }}" style="width:429px;height:44px;display:block;margin:10px 10px 0"></canvas>
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;font-size:9px">
+      <label style="display:flex;align-items:center;gap:6px"><span style="color:#8d887e">GATE</span><input type="range" min="30" max="1200" step="10" value="{{ gate }}" onChange="{{ setGate }}" style="width:70px"><span style="width:40px">{{ gate }}ms</span></label>
+      <div style="flex:1;display:flex;gap:3px;justify-content:flex-end;overflow:hidden">
+        <sc-for list="{{ log }}" as="l" hint-placeholder-count="0"><div style="display:flex;gap:3px;align-items:baseline;border:1px solid #cfc9bd;padding:1px 4px;opacity:{{ l.op }};flex:none"><span style="color:#8d887e;font-size:8px">{{ l.d }}</span><span>{{ l.n }}</span></div></sc-for>
+      </div>
+    </div>
+    <sc-if value="{{ showOuts }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-wrap:wrap;gap:4px;padding:0 10px 8px">
+        <sc-for list="{{ outOpts }}" as="o" hint-placeholder-count="1"><button onClick="{{ o.on }}" style="font-size:9px;padding:3px 6px;border:1px solid #1d1c1a;background:{{ o.bg }};color:{{ o.fg }};cursor:pointer">{{ o.label }}</button></sc-for>
+      </div>
+    </sc-if>
+  </div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;minPulseGap&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:30,&quot;min&quot;:0,&quot;max&quot;:200,&quot;step&quot;:5,&quot;unit&quot;:&quot;ms&quot;,&quot;tsType&quot;:&quot;number&quot;}}">
+const NN=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const SCALES={major:[0,2,4,5,7,9,11],minor:[0,2,3,5,7,8,10],dorian:[0,2,3,5,7,9,10],phryg:[0,1,3,5,7,8,10],'pent+':[0,2,4,7,9],'pent-':[0,3,5,7,10],whole:[0,2,4,6,8,10],chrom:[0,1,2,3,4,5,6,7,8,9,10,11]};
+const COL={ink:'#1d1c1a',mute:'#8d887e',line:'#e2ddd2',line2:'#c4beb1',acc:'#dc6a48',blue:'#4e8fd8',card:'#fbfaf6',paper:'#fbfaf6',shade:'#efebe2'};
+const TAU=Math.PI*2,CW=204,CH=120,KW=429,KH=44;
+const nn=m=>NN[((m%12)+12)%12]+(Math.floor(m/12)-1);
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const isBlack=m=>[1,3,6,8,10].includes(((m%12)+12)%12);
+const sgn=d=>d>0?'+'+d:''+d;
+const SYNC=[16,8,4,2,1,0.5,0.25,0.125],SYNCL=['4 bar','2 bar','1 bar','1/2','1/4','1/8','1/16','1/32'];
+const GRID=b=>{const d=[],l=[];for(let k=0;k<5;k++){const n=b*Math.pow(2,k);d.push(4/n);l.push('1/'+n);}return{d,l};};
+const mkL=()=>({ph:0,sh:0.5,lp:0.5,raw:0.5,val:0.5,h:[],hr:[]});
+
+class Component extends DCLogic {
+  state={source:'wheel',gen:'arp',order:'up',arpText:'0 2 4 7 9',mode:'free',tmode:'scale',root:9,scale:'minor',pcs:[0,3,5,7,10],octave:4,wrap:true,period:12,
+    L:{src:'osc',sync:false,retrig:false,div:2,shape:'sine',rate:0.12,base:0.5,depth:0.7,filt:'off',amt:0.3,cc:1},ccVal:64,
+    slices:12,maxSpeed:0.7,balls:5,restitution:0.82,swing:0,digBase:2,digDiv:4,agit:1,mod:{wheel:{mode:'scale',off:0,scl:1},shaker:{mode:'scale',off:0,scl:1},digital:{mode:'scale',off:0,scl:1}},gate:180,
+    synth:false,midiOn:false,midiErr:null,outs:[],outId:null,bpm:112,playing:true,melLen:16,
+    melody:[0,null,2,4,7,null,4,2,0,2,4,5,4,null,2,-1],held:[57,60,64],log:[]};
+  r={wrap:React.createRef(),stage:React.createRef(),lfo:React.createRef(),pulse:React.createRef(),gen:React.createRef(),trans:React.createRef(),inK:React.createRef(),outK:React.createRef(),c1:React.createRef(),c2:React.createRef(),c3:React.createRef()};
+  e={t:0,clock:0,lfoOff:0,LA:mkL(),inVel:0.7,inCC:0.5,energy:0.5,wheel:{a:0,w:0,slot:0,flick:0},balls:[],wall:[],beat:0,digT:-9,arpI:-1,arpPrev:-1,melI:-1,curDeg:null,genT:-9,pulseT:-9,inT:-9,active:{},th:[],ccLast:-1,ccT:0};
+
+  componentDidMount(){
+    this.fit=()=>{const w=this.r.wrap.current,s=this.r.stage.current;if(!w||!s)return;const k=Math.min(1.3,(w.clientWidth-16)/900);s.style.transform=`scale(${k})`;w.style.height=(s.offsetHeight*k+48)+'px';};
+    this.ro=new ResizeObserver(this.fit);this.ro.observe(this.r.wrap.current);this.ro.observe(this.r.stage.current);this.fit();
+    const tick=now=>{if(this.dead)return;const dt=Math.min(0.05,(now-(this.lt||now))/1000);this.lt=now;if(this.state.playing)this.step(dt);this.draw();this.raf=requestAnimationFrame(tick);};
+    this.raf=requestAnimationFrame(tick);
+  }
+  componentWillUnmount(){this.dead=true;cancelAnimationFrame(this.raf);this.ro&&this.ro.disconnect();}
+
+  arpSeq(){
+    const s=this.state,key=s.gen+'|'+s.arpText+'|'+s.order+'|'+s.held.join(',');if(this._ak===key)return this._as;
+    let raw;if(s.gen==='input'){const srt=[...s.held].sort((a,b)=>a-b);raw=s.held.map(h=>srt.indexOf(h));}
+    else raw=(s.arpText.match(/-?\d+/g)||[]).map(n=>clamp(parseInt(n,10),-24,24)).slice(0,16);
+    const up=[...raw].sort((a,b)=>a-b);let seq=raw;
+    if(s.order==='up'||s.order==='random')seq=up;else if(s.order==='down')seq=[...up].reverse();else if(s.order==='up/dn')seq=up.length>2?[...up,...up.slice(1,-1).reverse()]:up;
+    this._ak=key;this._as=seq;return seq;
+  }
+  pool(){
+    const s=this.state;
+    if(s.tmode==='scale')return{p:SCALES[s.scale].map(x=>x+s.root),b:(Math.floor(s.octave)+1)*12};
+    if(s.tmode==='set'){const b=Math.round((s.octave+1)*12);return{p:s.pcs.map(pc=>(((pc-b)%12)+12)%12).sort((a,c)=>a-c),b};}
+    return{p:[...s.held].sort((a,b)=>a-b),b:0};
+  }
+  transform(deg){const{p,b}=this.pool();if(!p.length)return null;const L=p.length,o=this.state.wrap?Math.floor(deg/L):0,i=this.state.wrap?deg-o*L:((deg%L)+L)%L,per=this.state.tmode==='set'?this.state.period:12,m=b+p[i]+per*o;return m<0||m>127?null:m;}
+  wheelGeo(){const s=this.state;let lo;if(s.tmode==='held'){lo=s.held.length?Math.floor(Math.min(...s.held)/12)*12:48;}else lo=(Math.floor(s.octave)+1)*12;const w=s.wrap;return{lo,hi:lo+(w?35:11),cx:CW/2,cy:CH/2+3,r0:w?12:38,r1:w?44:38,rl:w?53:50,span:w?36:12};}
+
+  lfoStep(L,st,dt){
+    let np;if(L.sync){const cyc=SYNC[L.div],q=(this.e.clock-this.e.lfoOff)/cyc;np=q-Math.floor(q);if(np<st.ph)st.sh=Math.random();st.ph=np;}
+    else{np=st.ph+L.rate*dt;if(np>=1)st.sh=Math.random();st.ph=np%1;}const p=st.ph;
+    const l=L.src==='vel'?this.e.inVel:L.src==='cc'?this.e.inCC:L.shape==='sine'?0.5-0.5*Math.cos(TAU*p):L.shape==='tri'?(p<0.5?2*p:2-2*p):L.shape==='saw'?p:st.sh;
+    const tau=0.02+L.amt*L.amt*3;st.lp+=(l-st.lp)*(1-Math.exp(-dt/tau));
+    const v=L.filt==='lpf'?st.lp:L.filt==='hpf'?clamp(0.5+(l-st.lp)*2.5,0,1):l;
+    st.raw=clamp(L.base+(l-0.5)*L.depth,0,1);st.val=clamp(L.base+(v-0.5)*L.depth,0,1);
+    st.h.push(st.val);st.hr.push(st.raw);if(st.h.length>220){st.h.shift();st.hr.shift();}
+  }
+
+  step(dt){
+    const s=this.state,e=this.e;e.t+=dt;e.clock+=dt*s.bpm/60;
+    this.lfoStep(s.L,e.LA,dt);
+    e.energy=e.LA.val;const k=e.energy;
+    const M=s.mod[s.source],mv=M?M.off+M.scl*k:k,ap=(base,range,lo,hi)=>clamp(M&&M.mode==='offset'?base+mv*range:base*mv,lo,hi);
+    if(s.source==='wheel'){
+      const W=e.wheel,target=ap(s.maxSpeed,2,0,3)*TAU;W.w+=(target-W.w)*Math.min(1,0.8*dt);W.a+=W.w*dt;
+      const slot=Math.floor(W.a/(TAU/s.slices));if(slot!==W.slot){W.slot=slot;W.flick=1;this.pulse(clamp(0.3+W.w/(TAU*1.4),0,1));}
+      W.flick=Math.max(0,W.flick-dt*7);
+    } else if(s.source==='shaker'){
+      const B=e.balls,R=0.055;
+      while(B.length<s.balls)B.push({x:0.2+Math.random()*0.6,y:0.2+Math.random()*0.6,vx:Math.random()-0.5,vy:0,cool:0,hit:-9});
+      if(B.length>s.balls)B.length=s.balls;
+      const ag=ap(s.agit,1,0,1.5);e.eff=ag;const kk=Math.pow(ag,1.4),damp=Math.exp(-0.7*dt);
+      const hit=(b,w,pos,sp)=>{if(sp>0.35&&b.cool<=0){b.cool=0.06;b.hit=e.t;e.wall.push({w,pos,t:e.t,sp});this.pulse(clamp(sp/3,0.15,1));}};
+      for(const b of B){
+        b.vx+=((Math.random()-0.5)*130*kk+Math.sin(e.t*TAU*2.1)*16*kk)*dt;
+        b.vy+=((Math.random()-0.5)*130*kk+2.6*(1-Math.min(ag,1)*0.85))*dt;
+        b.vx*=damp;b.vy*=damp;const sp=Math.hypot(b.vx,b.vy);if(sp>4){b.vx*=4/sp;b.vy*=4/sp;}
+        b.x+=b.vx*dt;b.y+=b.vy*dt;b.cool-=dt;const rs=s.restitution;
+        if(b.x<R){b.x=R;hit(b,'l',b.y,Math.abs(b.vx));b.vx=Math.abs(b.vx)*rs;}
+        if(b.x>1-R){b.x=1-R;hit(b,'r',b.y,Math.abs(b.vx));b.vx=-Math.abs(b.vx)*rs;}
+        if(b.y<R){b.y=R;hit(b,'t',b.x,Math.abs(b.vy));b.vy=Math.abs(b.vy)*rs;}
+        if(b.y>1-R){b.y=1-R;hit(b,'b',b.x,Math.abs(b.vy));b.vy=-Math.abs(b.vy)*rs;}
+      }
+      for(let i=0;i<B.length;i++)for(let j=i+1;j<B.length;j++){const a=B[i],b=B[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+        if(d<2*R&&d>0){const nx=dx/d,ny=dy/d,ov=(2*R-d)/2;a.x-=nx*ov;a.y-=ny*ov;b.x+=nx*ov;b.y+=ny*ov;const rel=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;if(rel>0){a.vx-=rel*nx;a.vy-=rel*ny;b.vx+=rel*nx;b.vy+=rel*ny;}}}
+      e.wall=e.wall.filter(w=>e.t-w.t<0.4);
+    } else if(s.source==='digital'){
+      const prev=e.beat;e.beat+=dt*s.bpm/60;const di=Math.round(ap(s.digDiv,4,0,4));e.digI=di;const d=GRID(s.digBase).d[di];
+      const sw=x=>{const q=x/d,f=q-Math.floor(q),cell=Math.floor(q);if(s.digBase!==2||d>0.25||!s.swing)return cell;return (cell%2===1&&f<s.swing*0.5)?cell-0.5:cell;};
+      if(Math.floor(sw(e.beat))>Math.floor(sw(prev))){const onBeat=Math.abs(e.beat-Math.round(e.beat))<0.04;this.pulse(onBeat?0.95:0.6);e.digT=e.t;}
+    }
+    for(const m in e.active)if(e.t>e.active[m].until+0.6)delete e.active[m];
+  }
+
+  pulse(vel){
+    const e=this.e,s=this.state,gap=(this.props.minPulseGap??30)/1000;if(e.t-e.pulseT<gap)return;e.pulseT=e.t;let deg=null;
+    if(s.gen!=='melody'){const seq=this.arpSeq();if(!seq.length)return;e.arpPrev=e.arpI;e.arpI=s.order==='random'?Math.floor(Math.random()*seq.length):(e.arpI+1)%seq.length;deg=seq[e.arpI];}
+    else{e.melI=(e.melI+1)%s.melLen;deg=s.melody[e.melI];}
+    e.genT=e.t;e.curDeg=deg;if(deg==null)return;
+    const m=this.transform(deg);e.th.push({deg,m,t:e.t});if(e.th.length>16)e.th.shift();if(m==null)return;
+    this.noteOn(m,vel,deg);
+  }
+  noteOn(m,vel,deg){
+    const e=this.e,s=this.state,v=clamp(Math.round(1+vel*126),1,127),dur=s.gate/1000;
+    e.active[m]={t:e.t,until:e.t+dur,v};
+    if(s.synth&&this.ac)this.beep(m,vel,dur);
+    const out=this.midiOut;if(out){try{out.send([0x90,m,v]);setTimeout(()=>out.send([0x80,m,0]),s.gate);}catch(err){}}
+    this.setState(st=>({log:[{n:nn(m),d:sgn(deg),id:e.t},...st.log].slice(0,5)}));
+  }
+  beep(m,vel,dur){
+    const ac=this.ac,t0=ac.currentTime,o=ac.createOscillator(),g=ac.createGain(),f=ac.createBiquadFilter();
+    o.type='triangle';o.frequency.value=440*Math.pow(2,(m-69)/12);f.type='lowpass';f.frequency.value=900+vel*3200;
+    g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(0.16*(0.2+vel*0.8),t0+0.006);g.gain.exponentialRampToValueAtTime(0.0008,t0+Math.max(0.08,dur)+0.18);
+    o.connect(f);f.connect(g);g.connect(ac.destination);o.start(t0);o.stop(t0+dur+0.25);
+  }
+  inputNote(m){const e=this.e,s=this.state;e.inT=e.t;if(s.L.retrig&&s.L.src==='osc'){e.LA.ph=0;e.lfoOff=e.clock;e.LA.sh=Math.random();}if(s.mode==='reset'){e.arpI=-1;e.arpPrev=-1;e.melI=-1;e.beat=0;}if(s.source==='none')this.pulse(0.8);}
+  toggleHeld(m){const h=this.state.held;if(h.includes(m)){this.e.inVel=0;this.setState({held:h.filter(x=>x!==m)});}else this.setState({held:[...h,m]},()=>this.inputNote(m));}
+
+  keys(lo,hi,W){const wh=[];for(let m=lo;m<=hi;m++)if(!isBlack(m))wh.push(m);const ww=W/wh.length,out=[];let wi=0;
+    for(let m=lo;m<=hi;m++){if(!isBlack(m)){out.push({m,x:wi*ww,w:ww,b:false});wi++;}else out.push({m,x:wi*ww-ww*0.32,w:ww*0.64,b:true});}return out;}
+  local(ev,W,H){const r=ev.currentTarget.getBoundingClientRect();return[(ev.clientX-r.left)*W/r.width,(ev.clientY-r.top)*H/r.height];}
+  prep(ref,W,H){const c=ref.current;if(!c)return null;const d=Math.max(2,window.devicePixelRatio||1);if(c.width!==Math.round(W*d)){c.width=Math.round(W*d);c.height=Math.round(H*d);}
+    const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,W,H);x.lineCap='round';x.lineJoin='round';return x;}
+  txt(x,s,px,py,o={}){x.font=`${o.w||400} ${o.size||9}px "IBM Plex Mono", monospace`;x.fillStyle=o.c||COL.ink;x.textAlign=o.a||'left';x.textBaseline='alphabetic';x.fillText(s,px,py);}
+  dk(t0,len){return Math.max(0,1-(this.e.t-t0)/len);}
+
+  draw(){
+    const s=this.state,e=this.e,t=e.t,W=CW,H=CH;let x;
+    if(x=this.prep(this.r.lfo,W,H)){
+      const y=v=>H-8-(H-24)*v,act=s.L,ast=e.LA,ac=COL.acc;
+      const b0=clamp(act.base-act.depth/2,0,1),b1=clamp(act.base+act.depth/2,0,1);
+      x.fillStyle='rgba(220,106,72,0.08)';x.fillRect(0,y(b1),W,y(b0)-y(b1));
+      x.strokeStyle=COL.line;x.lineWidth=1;[0,0.5,1].forEach(v=>{x.beginPath();x.moveTo(0,Math.round(y(v))+0.5);x.lineTo(W,Math.round(y(v))+0.5);x.stroke();});
+      const R=W-14,line=(h,col,lw,dash)=>{const n=h.length,st=R/220;x.strokeStyle=col;x.lineWidth=lw;x.setLineDash(dash||[]);x.beginPath();h.forEach((v,i)=>{const px=R-(n-1-i)*st;i?x.lineTo(px,y(v)):x.moveTo(px,y(v));});x.stroke();x.setLineDash([]);};
+      if(act.filt!=='off')line(ast.hr,COL.line2,1,[2,2]);
+      line(ast.h,COL.ink,1.5);
+      x.fillStyle=ac;x.beginPath();x.arc(R,y(ast.val),4,0,TAU);x.fill();
+      const lab='energy '+e.LA.val.toFixed(2)+(act.src==='vel'?' · in vel':act.src==='cc'?' · in cc'+act.cc:'');
+      this.txt(x,lab,0,9,{w:600});
+      if(act.filt!=='off')this.txt(x,act.filt,W,9,{a:'right',c:COL.mute});
+    }
+    if(x=this.prep(this.r.pulse,W,H)){
+      const pf=this.dk(e.pulseT,0.12);
+      if(s.source==='wheel'){
+        const Wh=e.wheel,cx=W/2,cy=H/2+9,R=H/2-15,stp=TAU/s.slices;
+        for(let i=0;i<s.slices;i++){x.beginPath();x.moveTo(cx,cy);x.arc(cx,cy,R,Wh.a+i*stp-Math.PI/2,Wh.a+(i+1)*stp-Math.PI/2);x.closePath();x.fillStyle=i%2?COL.shade:COL.card;x.fill();x.strokeStyle=COL.ink;x.lineWidth=1;x.stroke();}
+        x.beginPath();x.arc(cx,cy,R,0,TAU);x.lineWidth=1.5;x.stroke();
+        for(let i=0;i<s.slices;i++){const a=Wh.a+i*stp-Math.PI/2;x.fillStyle=COL.ink;x.beginPath();x.arc(cx+Math.cos(a)*(R-4),cy+Math.sin(a)*(R-4),2,0,TAU);x.fill();}
+        x.fillStyle=COL.card;x.beginPath();x.arc(cx,cy,7,0,TAU);x.fill();x.stroke();x.fillStyle=COL.ink;x.beginPath();x.arc(cx,cy,2,0,TAU);x.fill();
+        x.save();x.translate(cx,cy-R-10);x.rotate(-Wh.flick*0.55);x.beginPath();x.moveTo(-5,0);x.lineTo(5,0);x.lineTo(0,14);x.closePath();x.fillStyle=pf>0?COL.acc:COL.ink;x.fill();x.restore();
+        this.txt(x,(Wh.w/TAU).toFixed(2)+' rev/s',0,9,{w:600});this.txt(x,(Wh.w/TAU*s.slices).toFixed(1)+' p/s',W,9,{a:'right',c:COL.mute});
+      } else if(s.source==='shaker'){
+        const S=H-4,bx=(W-S)/2,by=2,R=0.055;
+        x.strokeStyle=COL.ink;x.lineWidth=1.5;x.strokeRect(bx,by,S,S);
+        for(const w of e.wall){const a=1-(t-w.t)/0.4,L=14+w.sp*8;x.strokeStyle=`rgba(220,106,72,${a})`;x.lineWidth=3.5;x.beginPath();
+          if(w.w==='l'||w.w==='r'){const X=w.w==='l'?bx:bx+S,Y=by+w.pos*S,d=w.w==='l'?-1:1;x.moveTo(X,Y-L/2);x.lineTo(X,Y+L/2);x.stroke();x.lineWidth=1;for(const o of[-5,0,5]){x.beginPath();x.moveTo(X+d*3,Y+o);x.lineTo(X+d*(4+6*(1-a)),Y+o*1.4);x.stroke();}}
+          else{const Y=w.w==='t'?by:by+S,X=bx+w.pos*S,d=w.w==='t'?-1:1;x.moveTo(X-L/2,Y);x.lineTo(X+L/2,Y);x.stroke();x.lineWidth=1;for(const o of[-5,0,5]){x.beginPath();x.moveTo(X+o,Y+d*3);x.lineTo(X+o*1.4,Y+d*(4+6*(1-a)));x.stroke();}}}
+        for(const b of e.balls){const hf=Math.max(0,1-(t-b.hit)/0.25),px=bx+b.x*S,py=by+b.y*S;
+          x.strokeStyle=COL.line2;x.lineWidth=1;x.beginPath();x.moveTo(px,py);x.lineTo(px-b.vx*0.06*S,py-b.vy*0.06*S);x.stroke();
+          x.fillStyle=hf>0?COL.acc:COL.ink;x.beginPath();x.arc(px,py,R*S,0,TAU);x.fill();}
+        this.txt(x,(e.eff??0).toFixed(2),bx+4,by+11,{c:COL.mute,size:8});
+      } else if(s.source==='digital'){
+        const G=GRID(s.digBase),DIVS=G.d,DIVL=G.l,x0=30,x1=W-4,w0=Math.floor(e.beat/4)*4,X=b=>x0+(b-w0)/4*(x1-x0),di=e.digI??2,top=14,rh=(H-top)/5;
+        for(let r=0;r<5;r++){const yc=top+r*rh+rh/2,act=r===di;
+          if(act){x.fillStyle=`rgba(220,106,72,${0.1+0.25*this.dk(e.digT,0.15)})`;x.fillRect(0,yc-rh/2+1,W,rh-2);}
+          this.txt(x,DIVL[r],0,yc+3,{c:act?COL.ink:COL.mute,w:act?600:400,size:8});
+          x.strokeStyle=act?COL.ink:COL.line2;x.lineWidth=1;x.beginPath();x.moveTo(x0,yc+0.5);x.lineTo(x1,yc+0.5);x.stroke();
+          const d=DIVS[r];for(let j=0;j*d<4-1e-6;j++){const b=w0+j*d;const px=X(b),passed=b<=e.beat,big=Math.abs(b-Math.round(b))<1e-6&&Math.round(b)%1===0&&(DIVS[r]>=1||Math.abs((b-w0)-Math.round(b-w0))<1e-6);x.lineWidth=act?2:1;x.strokeStyle=act?(passed?COL.ink:COL.line2):COL.line2;x.beginPath();x.moveTo(px,yc-(big?7:4));x.lineTo(px,yc+(big?7:4));x.stroke();}}
+        const ph=X(e.beat);x.strokeStyle=COL.acc;x.lineWidth=1.5;x.beginPath();x.moveTo(ph,top-2);x.lineTo(ph,H);x.stroke();
+        this.txt(x,'grid '+DIVL[di],0,9,{w:600});this.txt(x,'beat '+(Math.floor(e.beat)%4+1),W,9,{a:'right',c:COL.mute});
+      } else {
+        const a=this.dk(e.inT,0.3),cx=W/2,cy=H/2+4;x.strokeStyle=COL.ink;x.lineWidth=1.5;x.beginPath();x.arc(cx,cy,26,0,TAU);x.stroke();
+        x.fillStyle=`rgba(220,106,72,${a})`;x.beginPath();x.arc(cx,cy,26*(0.4+0.6*a),0,TAU);x.fill();
+        x.strokeStyle=`rgba(220,106,72,${a})`;x.lineWidth=1;x.beginPath();x.arc(cx,cy,26+24*(1-a),0,TAU);x.stroke();
+        this.txt(x,'MIDI IN',cx,cy+3,{a:'center',w:600});
+        x.strokeStyle=COL.ink;x.setLineDash([3,3]);x.beginPath();x.moveTo(cx,H);x.lineTo(cx,cy+30);x.stroke();x.setLineDash([]);
+      }
+    }
+    if(x=this.prep(this.r.gen,W,H)){
+      const gf=this.dk(e.genT,0.2);
+      if(s.gen!=='melody'){
+        const seq=this.arpSeq(),n=seq.length,cx=W/2,cy=H/2+5,R=n>1?H/2-17:0,P=i=>[cx+R*Math.cos(-Math.PI/2+i*TAU/n),cy+R*Math.sin(-Math.PI/2+i*TAU/n)];
+        if(n){x.lineWidth=1;
+          if(s.order==='random'){x.strokeStyle=COL.line;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const a=P(i),b=P(j);x.beginPath();x.moveTo(...a);x.lineTo(...b);x.stroke();}}
+          else{x.strokeStyle=COL.line2;x.beginPath();for(let i=0;i<=n;i++){const p=P(i%n);i?x.lineTo(...p):x.moveTo(...p);}x.stroke();}
+          const cur=e.arpI%n,prv=e.arpPrev;
+          if(cur>=0&&prv>=0&&prv<n&&prv!==cur){const a=P(prv),b=P(cur),k=Math.min(1,(1-gf)*3+0.3);x.strokeStyle=`rgba(220,106,72,${0.3+0.7*gf})`;x.lineWidth=3;x.beginPath();x.moveTo(...a);x.lineTo(a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k);x.stroke();}
+          const nr=n>8?7:10;
+          for(let i=0;i<n;i++){const p=P(i),on=i===cur;x.beginPath();x.arc(p[0],p[1],on?nr+3*gf:nr,0,TAU);x.fillStyle=on?COL.acc:COL.card;x.fill();x.strokeStyle=COL.ink;x.lineWidth=1.2;x.stroke();this.txt(x,sgn(seq[i]),p[0],p[1]+3,{a:'center',size:n>8?7:9,w:600,c:on?COL.paper:COL.ink});}
+          this.txt(x,s.order,cx,cy+3,{a:'center',c:COL.mute,size:8});
+          this.txt(x,e.curDeg==null?'':'tone '+sgn(e.curDeg),W,9,{a:'right',c:COL.mute});
+        } else this.txt(x,s.gen==='input'?'hold notes on IN':'type tones, e.g. 0 2 4',W/2,H/2,{a:'center',c:COL.mute});
+      } else {
+        const len=s.melLen,top=13,GH=H-top,cw=W/len,ch=GH/15,yy=d=>top+(7-d+0.5)*ch,xx=i=>(i+0.5)*cw,mel=s.melody;
+        x.lineWidth=1;for(let r=0;r<15;r++){x.strokeStyle=(7-r)===0?COL.line2:COL.line;x.beginPath();x.moveTo(0,Math.round(yy(7-r))+0.5);x.lineTo(W,Math.round(yy(7-r))+0.5);x.stroke();}
+        for(let i=0;i<=len;i++){x.strokeStyle=i%4===0?COL.line2:COL.line;x.beginPath();x.moveTo(Math.round(i*cw)+0.5,top);x.lineTo(Math.round(i*cw)+0.5,H);x.stroke();}
+        const cur=e.melI;
+        if(cur>=0&&cur<len){x.fillStyle=`rgba(220,106,72,${0.08+0.22*gf})`;x.fillRect(cur*cw,top,cw,GH);}
+        for(let i=0;i<len-1;i++){const a=mel[i],b=mel[i+1];if(a==null||b==null)continue;x.strokeStyle=i<cur?COL.acc:COL.ink;x.lineWidth=i<cur?2.2:1.3;x.beginPath();x.moveTo(xx(i),yy(a));x.lineTo(xx(i+1),yy(b));x.stroke();}
+        for(let i=0;i<len;i++){const d=mel[i];if(d==null){x.fillStyle=COL.mute;x.fillRect(xx(i)-2,top+GH/2-0.5,4,1);continue;}const on=i===cur,sz=on?6+4*gf:5;x.fillStyle=i<=cur?COL.acc:COL.ink;x.fillRect(xx(i)-sz/2,yy(d)-sz/2,sz,sz);}
+        this.txt(x,'step '+(cur+1)+'/'+len,0,9,{w:600});this.txt(x,e.curDeg==null?'rest':'tone '+sgn(e.curDeg),W,9,{a:'right',c:COL.mute});
+      }
+    }
+    if(x=this.prep(this.r.trans,W,H)){
+      const G=this.wheelGeo(),{lo,hi,cx,cy,r0,r1,rl,span}=G,ang=m=>((m%12)+12)%12/12*TAU-Math.PI/2,rad=m=>r0+(clamp(m,lo,hi+1)-lo)/span*(r1-r0),P=m=>[cx+Math.cos(ang(m))*rad(m),cy+Math.sin(ang(m))*rad(m)];
+      const {p}=this.pool(),pcs=new Set(p.map(v=>((v%12)+12)%12)),held=new Set(s.held),setNotes=new Set();if(s.tmode==='set')for(let d=-40;d<=80;d++){const m=this.transform(d);if(m!=null)setNotes.add(m);}
+      const inPool=m=>s.tmode==='set'?setNotes.has(m):s.tmode==='held'?(s.wrap?held.has(m):[...held].some(h=>(((h-m)%12)+12)%12===0)):pcs.has(((m%12)+12)%12);
+      x.strokeStyle=COL.line;x.lineWidth=1;for(let i=0;i<12;i++){const a=i/12*TAU-Math.PI/2;x.beginPath();x.moveTo(cx+Math.cos(a)*r0*0.6,cy+Math.sin(a)*r0*0.6);x.lineTo(cx+Math.cos(a)*(r1+3),cy+Math.sin(a)*(r1+3));x.stroke();}
+      x.strokeStyle=COL.line2;x.beginPath();for(let q=0;q<=span*4;q++){const a=(q/4)/12*TAU-Math.PI/2,r=r0+(q/4)/span*(r1-r0),px=cx+Math.cos(a)*r,py=cy+Math.sin(a)*r;q?x.lineTo(px,py):x.moveTo(px,py);}x.stroke();
+      for(let i=0;i<12;i++){const a=i/12*TAU-Math.PI/2,on=pcs.has(i)||(s.tmode==='held'&&[...held].some(h=>h%12===i)),root=s.tmode==='scale'&&i===s.root,lx=cx+Math.cos(a)*rl,ly=cy+Math.sin(a)*rl;
+        if(on){x.fillStyle=root?COL.ink:COL.shade;x.beginPath();x.arc(lx,ly,6.5,0,TAU);x.fill();}
+        this.txt(x,NN[i],lx,ly+2.5,{a:'center',size:7,w:on?600:400,c:root?COL.paper:(on?COL.ink:COL.mute)});}
+      for(let m=lo;m<=hi;m++){if(!inPool(m))continue;const[px,py]=P(m);x.fillStyle=COL.ink;x.beginPath();x.arc(px,py,2.3,0,TAU);x.fill();}
+      for(const h of e.th){if(h.m==null)continue;const a=Math.max(0,1-(t-h.t)/1.2);if(a<=0)continue;const[px,py]=P(h.m);
+        x.strokeStyle=`rgba(220,106,72,${a*0.8})`;x.lineWidth=1+1.5*a;x.beginPath();x.moveTo(cx,cy);x.lineTo(px,py);x.stroke();
+        x.fillStyle=`rgba(220,106,72,${a})`;x.beginPath();x.arc(px,py,2.5+3*a,0,TAU);x.fill();}
+      if(s.tmode==='set'){const bm=this.pool().b,a=ang(bm),r=rad(bm);x.strokeStyle=COL.acc;x.lineWidth=1.5;x.beginPath();x.moveTo(cx+Math.cos(a)*(r-6),cy+Math.sin(a)*(r-6));x.lineTo(cx+Math.cos(a)*(r+6),cy+Math.sin(a)*(r+6));x.stroke();}
+      x.fillStyle=COL.ink;x.beginPath();x.arc(cx,cy,1.8,0,TAU);x.fill();
+      const last=e.th[e.th.length-1];
+      this.txt(x,last?(sgn(last.deg)+' → '+(last.m==null?'–':nn(last.m))):(p.length?'':'empty'),0,9,{w:600});
+      this.txt(x,nn(lo)+'–'+nn(hi),W,9,{a:'right',c:COL.mute,size:8});
+    }
+    const keyDraw=(x,lo,hi,W,H,fn)=>{const ks=this.keys(lo,hi,W);
+      for(const k of ks)if(!k.b){const f=fn(k.m);x.fillStyle=COL.card;x.fillRect(k.x,0,k.w,H);if(f){x.fillStyle=f;x.fillRect(k.x,0,k.w,H);}x.strokeStyle=COL.ink;x.lineWidth=1;x.strokeRect(k.x+0.5,0.5,k.w,H-1);if(k.m%12===0)this.txt(x,nn(k.m),k.x+k.w/2,H-4,{a:'center',size:7,c:COL.mute});}
+      for(const k of ks)if(k.b){const f=fn(k.m);x.fillStyle=COL.ink;x.fillRect(k.x,0,k.w,H*0.6);if(f){x.fillStyle=f;x.fillRect(k.x+1,0,k.w-2,H*0.6-1);}}};
+    if(x=this.prep(this.r.inK,KW,KH))keyDraw(x,36,83,KW,KH,m=>s.held.includes(m)?COL.blue:null);
+    if(x=this.prep(this.r.outK,KW,KH))keyDraw(x,36,83,KW,KH,m=>{const a=e.active[m];if(!a)return null;const al=t<a.until?1:Math.max(0,1-(t-a.until)/0.6);return al>0?`rgba(220,106,72,${al*(0.3+0.7*a.v/127)})`:null;});
+    const fl=(ref,v)=>{const el=ref.current;if(el){el.style.opacity=0.15+0.85*v;el.style.transform=`scale(${0.8+0.8*v})`;}};
+    fl(this.r.c1,e.energy);fl(this.r.c2,this.dk(e.pulseT,0.15));fl(this.r.c3,this.dk(e.genT,0.15));
+  }
+
+  set(k,v){this.setState({[k]:v});if(k==='gen'||k==='order'||k==='source'){this.e.arpI=-1;this.e.arpPrev=-1;this.e.melI=-1;}}
+  setMod(k,v){this.setState(s=>({mod:{...s.mod,[s.source]:{...s.mod[s.source],[k]:v}}}));}
+  setL(k,v){this.setState(s=>({L:{...s.L,[k]:v}}));}
+  async toggleMidi(){
+    if(this.state.midiOn){this.midiOut=null;this.setState({midiOn:false});return;}
+    if(!navigator.requestMIDIAccess){this.setState({midiErr:'web midi not supported'});return;}
+    try{const acc=await navigator.requestMIDIAccess();this.acc=acc;const outs=[...acc.outputs.values()];
+      acc.inputs.forEach(inp=>{inp.onmidimessage=ev=>{const[st,n,v]=ev.data,c=st&0xf0;if(c===0xB0&&n===this.state.L.cc){this.e.inCC=v/127;this.setState({ccVal:v});return;}if(c===0x90&&v>0){this.e.inVel=v/127;if(!this.state.held.includes(n))this.setState(s=>({held:[...s.held,n]}),()=>this.inputNote(n));}else if(c===0x80||(c===0x90&&v===0))this.e.inVel=0,this.setState(s=>({held:s.held.filter(x=>x!==n)}));};});
+      this.midiOut=outs[0]||null;this.setState({midiOn:true,midiErr:outs.length?null:'no midi outputs found',outs:outs.map(o=>({id:o.id,name:o.name})),outId:outs[0]?outs[0].id:null});
+    }catch(err){this.setState({midiErr:'midi access denied'});}
+  }
+
+  renderVals(){
+    const s=this.state,e=this.e,L=s.L;
+    const mk=(cur,v,label,on)=>{const a=cur===v;return{label,on,bg:a?COL.ink:COL.card,fg:a?COL.paper:COL.ink};};
+    const seg=(key,opts,labels)=>opts.map((v,i)=>mk(s[key],v,labels?labels[i]:v,()=>this.set(key,v)));
+    const lseg=(key,opts,labels)=>opts.map((v,i)=>mk(L[key],v,labels?labels[i]:v,()=>this.setL(key,v)));
+    const num=k=>ev=>this.setState({[k]:parseFloat(ev.target.value)});
+    const lnum=k=>ev=>this.setL(k,parseFloat(ev.target.value));
+    const isSet=s.tmode==='set';
+    return{
+      wrapRef:this.r.wrap,stageRef:this.r.stage,lfoRef:this.r.lfo,pulseRef:this.r.pulse,genRef:this.r.gen,transRef:this.r.trans,inRef:this.r.inK,outRef:this.r.outK,c1Ref:this.r.c1,c2Ref:this.r.c2,c3Ref:this.r.c3,
+      source:s.source,gen:s.gen,tmode:s.tmode,bpm:s.bpm,slices:s.slices,balls:s.balls,melLen:s.melLen,octave:s.octave,gate:s.gate,arpText:s.arpText,
+      maxSpeed:s.maxSpeed,restitution:s.restitution,swing:s.swing,
+      maxSpeedTxt:s.maxSpeed.toFixed(2),restitutionTxt:s.restitution.toFixed(2),swingTxt:Math.round(s.swing*100)+'%',
+      lsrcOpts:lseg('src',['osc','vel','cc'],['osc','in vel','in cc']),isOsc:L.src==='osc',isSync:L.sync,notSync:!L.sync,lDiv:L.div,lDivTxt:SYNCL[L.div],setLDiv:ev=>this.setL('div',parseInt(ev.target.value,10)),
+      toggleSync:()=>{if(!L.sync)e.lfoOff=e.clock-e.LA.ph*SYNC[L.div];this.setL('sync',!L.sync);},syncTxt:L.sync?'ON':'OFF',syncBg:L.sync?COL.ink:COL.card,syncFg:L.sync?COL.paper:COL.ink,
+      toggleRetrig:()=>this.setL('retrig',!L.retrig),retrigTxt:L.retrig?'ON':'OFF',retrigBg:L.retrig?COL.ink:COL.card,retrigFg:L.retrig?COL.paper:COL.ink,isVel:L.src==='vel',ccVal:s.ccVal,
+      setCCVal:ev=>{const v=parseInt(ev.target.value,10);e.inCC=v/127;this.setState({ccVal:v});},
+      shapeOpts:lseg('shape',['sine','tri','saw','rand'],['sin','tri','saw','s&h']),
+      filtOpts:lseg('filt',['off','lpf','hpf']),
+      isCC:L.src==='cc',ccNum:L.cc,setCC:lnum('cc'),
+      lRate:L.rate,lBase:L.base,lDepth:L.depth,lAmt:L.amt,
+      lRateTxt:L.rate.toFixed(2)+'Hz',lBaseTxt:L.base.toFixed(2),lDepthTxt:L.depth.toFixed(2),lAmtTxt:(0.02+L.amt*L.amt*3).toFixed(2)+'s',
+      amtLabel:L.filt==='hpf'?'WINDOW':'INERTIA',
+      setLRate:lnum('rate'),setLBase:lnum('base'),setLDepth:lnum('depth'),setLAmt:lnum('amt'),
+      setSlices:num('slices'),setMaxSpeed:num('maxSpeed'),setBalls:num('balls'),setRestitution:num('restitution'),setSwing:num('swing'),setBpm:num('bpm'),setOctave:num('octave'),setGate:num('gate'),
+      setMelLen:ev=>this.setState({melLen:parseInt(ev.target.value,10)}),
+      setArpText:ev=>this.setState({arpText:ev.target.value}),
+      srcOpts:seg('source',['wheel','shaker','digital','none'],['wheel','shaker','digital','midi in']),
+      genOpts:seg('gen',['arp','input','melody'],['arp','input','melody']),isTones:s.gen==='arp',
+      orderOpts:seg('order',['up','down','up/dn','random','written'],['up','dn','up/dn','rnd',s.gen==='input'?'played':'typed']),
+      modeOpts:seg('mode',['free','reset'],['free run','reset on in']),
+      tOpts:seg('tmode',['scale','set','held'],['scale','set','held']),
+      scaleOpts:seg('scale',Object.keys(SCALES)),
+      baseOpts:seg('digBase',[2,3,5,7],['2','3','5','7']),
+      notNone:s.source!=='none',
+      modOpts:s.source==='none'?[]:['scale','offset'].map(v=>mk(s.mod[s.source].mode,v,v,()=>this.setMod('mode',v))),
+      modOff:s.source==='none'?0:s.mod[s.source].off,modScl:s.source==='none'?1:s.mod[s.source].scl,
+      modOffTxt:s.source==='none'?'':s.mod[s.source].off.toFixed(2),modSclTxt:s.source==='none'?'':'×'+s.mod[s.source].scl.toFixed(2),
+      setModOff:ev=>this.setMod('off',parseFloat(ev.target.value)),setModScl:ev=>this.setMod('scl',parseFloat(ev.target.value)),
+      agit:s.agit,agitTxt:s.agit.toFixed(2),setAgit:num('agit'),
+      digDiv:s.digDiv,digDivTxt:GRID(s.digBase).l[s.digDiv],setDigDiv:num('digDiv'),
+      pcOpts:NN.map((n,i)=>{const on=isSet?s.pcs.includes(i):s.root===i;return{label:n,bg:on?COL.ink:(isBlack(i)?COL.shade:COL.card),fg:on?COL.paper:COL.ink,
+        on:()=>{if(isSet)this.setState({pcs:s.pcs.includes(i)?s.pcs.filter(x=>x!==i):[...s.pcs,i]});else this.setState({root:i});}};}),
+      octStep:isSet?String(1/12):'1',octTxt:isSet?s.octave.toFixed(2):String(Math.floor(s.octave)),
+      isSetMode:isSet,period:s.period,setPeriod:num('period'),
+      toggleWrap:()=>this.setState({wrap:!s.wrap}),wrapTxt:s.wrap?'ON':'OFF',wrapBg:s.wrap?COL.ink:COL.card,wrapFg:s.wrap?COL.paper:COL.ink,
+      transCursor:s.tmode==='held'?'default':'pointer',
+      transDown:ev=>{if(s.tmode==='held')return;const[px,py]=this.local(ev,CW,CH),G=this.wheelGeo();let a=Math.atan2(py-G.cy,px-G.cx)+Math.PI/2;if(a<0)a+=TAU;const i=Math.round(a/(TAU/12))%12;
+        if(isSet)this.setState({pcs:s.pcs.includes(i)?s.pcs.filter(x=>x!==i):[...s.pcs,i]});else this.setState({root:i});},
+      isWheel:s.source==='wheel',isShaker:s.source==='shaker',isDigital:s.source==='digital',isNone:s.source==='none',
+      isArp:s.gen!=='melody',isMel:s.gen==='melody',isScale:s.tmode==='scale',isHeld:s.tmode==='held',showPcs:s.tmode!=='held',
+      genCursor:s.gen==='melody'?'crosshair':'default',
+      kick:()=>{if(s.source==='wheel')e.wheel.w+=TAU*1.2;else e.balls.forEach(b=>{b.vx+=(Math.random()-0.5)*6;b.vy+=(Math.random()-0.5)*6;});},
+      genDown:ev=>{if(s.gen!=='melody')return;const[px,py]=this.local(ev,CW,CH);const len=s.melLen,col=clamp(Math.floor(px/(CW/len)),0,len-1),deg=clamp(7-Math.floor((py-13)/((CH-13)/15)),-7,7);
+        const mel=[...s.melody];mel[col]=mel[col]===deg?null:deg;this._dc=col;this.setState({melody:mel});},
+      genMove:ev=>{if(s.gen!=='melody'||!ev.buttons)return;const[px,py]=this.local(ev,CW,CH);const len=s.melLen,col=clamp(Math.floor(px/(CW/len)),0,len-1),deg=clamp(7-Math.floor((py-13)/((CH-13)/15)),-7,7);
+        if(col===this._dc)return;this._dc=col;const mel=[...s.melody];mel[col]=deg;this.setState({melody:mel});},
+      clearMel:()=>this.setState({melody:Array(16).fill(null)}),
+      inDown:ev=>{const[px,py]=this.local(ev,KW,KH);const ks=this.keys(36,83,KW);const k=(py<KH*0.6&&ks.find(k=>k.b&&px>=k.x&&px<k.x+k.w))||ks.find(k=>!k.b&&px>=k.x&&px<k.x+k.w);if(k){e.inVel=clamp(py/(k.b?KH*0.6:KH),0.05,1);this.toggleHeld(k.m);}},
+      clearHeld:()=>{e.inVel=0;this.setState({held:[]});},
+      heldTxt:s.held.length?[...s.held].sort((a,b)=>a-b).map(nn).join(' '):'none',
+      inFeeds:[s.source==='none'?'pulse':null,s.gen==='input'?'generate':null,s.mode==='reset'?'reset':null,s.tmode==='held'?'transform':null].filter(Boolean).join(' · ')||'nothing',
+      togglePlay:()=>this.setState({playing:!s.playing}),playTxt:s.playing?'■ STOP':'▶ RUN',playBg:s.playing?COL.ink:COL.card,playFg:s.playing?COL.paper:COL.ink,
+      toggleSynth:()=>{if(!this.ac)this.ac=new (window.AudioContext||window.webkitAudioContext)();this.ac.resume();this.setState({synth:!s.synth});},
+      synthTxt:s.synth?'ON':'OFF',synthBg:s.synth?COL.ink:COL.card,synthFg:s.synth?COL.paper:COL.ink,
+      toggleMidi:()=>this.toggleMidi(),midiTxt:s.midiOn?'ON':'OFF',midiBg:s.midiOn?COL.ink:COL.card,midiFg:s.midiOn?COL.paper:COL.ink,
+      showOuts:s.midiOn&&s.outs.length>1,
+      outOpts:s.outs.map(o=>({label:o.name,bg:s.outId===o.id?COL.ink:COL.card,fg:s.outId===o.id?COL.paper:COL.ink,on:()=>{this.midiOut=this.acc.outputs.get(o.id);this.setState({outId:o.id});}})),
+      outName:s.midiErr||(s.midiOn?((s.outs.find(o=>o.id===s.outId)||{}).name||'midi'):(s.synth?'internal synth':'preview only')),
+      log:s.log.map((l,i)=>({...l,op:String(1-i*0.16)}))
+    };
+  }
+}
+</script>
+</body>
+</html>
