@@ -36,7 +36,8 @@ juce_add_plugin(Miditin
 set(MDT_CORE_SOURCES)
 
 # Drawing code the plugin and the snapshot tool share.
-set(MDT_UI_SOURCES)
+set(MDT_UI_SOURCES
+    Source/UI/Fonts.cpp)
 
 set(MDT_DEFINITIONS
     JUCE_WEB_BROWSER=0
@@ -53,6 +54,7 @@ target_compile_definitions(Miditin PUBLIC ${MDT_DEFINITIONS} JUCE_VST3_CAN_REPLA
 target_include_directories(Miditin PRIVATE Source)
 target_link_libraries(Miditin
     PRIVATE
+        MiditinData
         juce::juce_audio_utils
     PUBLIC
         juce::juce_recommended_config_flags

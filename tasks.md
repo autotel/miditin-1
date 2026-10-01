@@ -11,11 +11,6 @@ and one commit per task.
 
 ## Phase 0 -- foundation
 
-- [sonnet] Bundle IBM Plex Mono 400/500/600 and IBM Plex Sans Condensed 500/600 via
-  `juce_add_binary_data`, plus `Resources/Fonts/OFL-IBMPlex.txt`. Port mepSynth `Source/UI/Fonts`
-  (`drawTracked()`) with the prototype's type roles. Palette as named colours in `Source/UI/Theme.h`
-  (paper `#fbfaf6`, ground `#e4e0d6`, ink `#1d1c1a`, muted `#8d887e`, orange `#dc6a48`, plus the
-  input blue and anything else the prototype's inline styles use -- read them out, do not guess).
 - [opus] `wiki/architecture.md`: threading, the audio-thread clock, voice pool, state split,
   how the UI snapshot flows. Add it to the wiki routing table.
 
