@@ -68,7 +68,8 @@ juce_add_console_app(MiditinTests PRODUCT_NAME "MiditinTests")
 target_sources(MiditinTests PRIVATE
     ${MDT_CORE_SOURCES}
     Tests/main.cpp
-    Tests/ModelTests.cpp)
+    Tests/ModelTests.cpp
+    Tests/TransformerTests.cpp)
 target_compile_definitions(MiditinTests PRIVATE ${MDT_DEFINITIONS})
 target_include_directories(MiditinTests PRIVATE Source Tests)
 target_link_libraries(MiditinTests

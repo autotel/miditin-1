@@ -9,15 +9,6 @@ Source for every phase: `miditin 1 - spec.md` (§ numbers below) and the v2 prot
 Port behaviour from the prototype; do not reinvent it. Each phase ends with `./build.sh test` green
 and one commit per task.
 
-## Phase 2 -- transform (§6)
-
-- [opus] `Transformer`: modes scale (8 scale types, root, whole-octave shift), set (pitch-class
-  set, OCT LEN 1-24, fractional octave in semitone steps that also sets the border note), held
-  (pool = held notes, tone 0 = lowest). Octave wrap on (continue into next period) / off (fold
-  within one period). Exact inverse: input note → pool index k. Pure, allocation-free.
-  Tests: every mode × wrap, negative tones, OCT LEN ≠ 12, fractional octave border, inverse ∘
-  forward = identity on pool notes, and the held-mode inverse octave bug (§6.5) pinned.
-
 ## Phase 3 -- generate (§5)
 
 - [sonnet] Arpeggio: parse typed tones (`0 2 4 7 9`, negatives allowed), orders up / down /
