@@ -75,6 +75,9 @@ open changes nothing until the plugin is reloaded.** Crash in REAPER: `./debug-r
 - IBM Plex Mono / IBM Plex Sans Condensed are SIL OFL 1.1 with Reserved Font Name "Plex": embed
   them **unmodified** (no subsetting into a renamed font); the OFL text ships with any binary
 - Put durable knowledge in `wiki/`, not here or in `tasks.md` — never the same fact twice
+- **Never open a window on the user's display.** Check the UI with the offscreen snapshot tool
+  (`Tools/RenderSnapshots.cpp`, no window at all). If the running Standalone is truly needed, run it
+  under `xvfb-run -a` — never on `DISPLAY=:0` / Wayland.
 
 ## Unattended runs
 
