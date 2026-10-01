@@ -9,52 +9,13 @@ Source for every phase: `miditin 1 - spec.md` (§ numbers below) and the v2 prot
 Port behaviour from the prototype; do not reinvent it. Each phase ends with `./build.sh test` green
 and one commit per task.
 
-## Phase 3 -- generate (§5)
-
-- [sonnet] Arpeggio: parse typed tones (`0 2 4 7 9`, negatives allowed), orders up / down /
-  up-down / random (seeded) / as typed; one step per pulse.
-- [sonnet] Input generator: sequence from held input notes, "as typed" = "as played", length =
-  held count; in poly a single step ("1", this voice's note).
-- [opus] Melody: 16-step grid, length 2-16, tones -7..+7, held notes via ties (one note-on held
-  across tied steps, released one gate time after the last step), TRANSPOSE BY IN through the
-  transformer inverse (mono: last held note; poly: voice's own note). Spec §9 transpose-centre
-  question stays open: implement what the prototype does and note it in the wiki.
-- [sonnet] Run modes `free run` / `reset on in`. Tests for every generator and order.
-
-## Phase 4 -- energy (§3)
-
-- [opus] Energy source: osc (sine / triangle / saw / S&H, rate Hz or SYNC 4 bar…1/32 from host
-  PPQ with a free-running fallback when the host is stopped, RETRIG), vel (drops to 0 on
-  note-off), note (C2..C7 → 0..1), cc (selectable CC number). Center / depth range. Filter off /
-  lpf (inertia time constant) / hpf (rate of change over a window) applied to every source. Check
-  mepSynth `ModShape.h` for reusable shapes and sync maths before writing new ones. Tests per
-  source, sync against a fake playhead, filter step responses.
-
-## Phase 5 -- pulse (§4)
-
-- [opus] Energy modulation per generator: mode scale (p × m) / offset (p + m × range),
-  m = offset + scale × energy, offset -1..1, scale -2..2; default scale, 0, ×1. Stored per generator.
-- [opus] Wheel: speed with inertia driven by energy as spin force, 3-24 slices, a pulse per peg
-  passing 3 o'clock, strength from spin speed, manual spin kick.
-- [opus] Shaker: agitation from energy, N balls with ball-ball collisions, restitution; **only wall
-  hits** pulse, strength from impact speed; shake kick. Fixed-step, seeded.
-- [opus] Digital: base 2/3/5/7, divisions per bar = base × 2ᵏ, energy picks k (always on grid),
-  swing for base 2 only, locked to host PPQ when playing.
-- [sonnet] None / MIDI in: each incoming note-on is a pulse, strength = velocity.
-- Tests: pulse counts and strengths over rendered time for fixed seeds and energies.
-
 ## Phase 6 -- MIDI engine (§2, §7)
 
-- [opus] Processor state: `getStateInformation` = APVTS + `Patch::toXml`, round-trip test;
+- [opus] Processor: `processBlock` drives `mdt::Engine` (copy input MIDI first; output only
+  generated notes), releases on bypass / `releaseResources`, feeds UI events (IN keyboard, release
+  all, kick) through a FIFO. Processor state: `getStateInformation` = APVTS + `Patch::toXml`, round-trip test;
   `Patch` published through `TripleBuffer`; `UiSnapshot` (per-voice energy, wheel angle, balls,
   digital playhead, generator step, last tone -> note, pulse events, lit notes) through another.
-- [opus] Wire the chain in `processBlock`: control-rate tick, sample-accurate output events,
-  strength → velocity, gate length, active-note tracking and guaranteed note-offs (see CLAUDE.md
-  invariant). Mono: one chain. Poly: preallocated pool (choose a cap, e.g. 16), a chain per held
-  input note created on note-on and released on note-off, tone 0 = that voice's input note located
-  in the transformer pool. Input routing per the IN header (pulse · generate · reset · transform).
-  Tests on rendered MIDI: no hanging notes under note-on/off storms, mode switches mid-note,
-  transport stop, voice-cap overflow.
 - [sonnet] Standalone preview: simple internal synth (§7 "Sound") rendering the output notes to
   audio, on by default only in the Standalone; MIDI output device selectable in the Standalone's
   settings. In a DAW the audio output stays silent unless preview is switched on.
