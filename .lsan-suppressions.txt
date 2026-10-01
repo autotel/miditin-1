@@ -1,0 +1,10 @@
+# Leaks in system libraries that allocate process-lifetime globals and never free them. None of
+# these are reachable from our code -- JUCE touches fontconfig the first time anything asks for a
+# font, and fontconfig's config cache lives until the process dies by design.
+#
+# Keep this list narrow. A suppression for a library we actually own would hide a real bug.
+leak:libfontconfig
+leak:libfreetype
+leak:libexpat
+leak:libGLX
+leak:libGLdispatch
