@@ -33,7 +33,9 @@ juce_add_plugin(Miditin
     COPY_PLUGIN_AFTER_BUILD FALSE)
 
 # Shared between the plugin and the headless tests. Anything that is not UI belongs here.
-set(MDT_CORE_SOURCES)
+set(MDT_CORE_SOURCES
+    Source/Model/ParamRegistry.cpp
+    Source/Model/Patch.cpp)
 
 # Drawing code the plugin and the snapshot tool share.
 set(MDT_UI_SOURCES
@@ -66,7 +68,7 @@ juce_add_console_app(MiditinTests PRODUCT_NAME "MiditinTests")
 target_sources(MiditinTests PRIVATE
     ${MDT_CORE_SOURCES}
     Tests/main.cpp
-    Tests/SmokeTests.cpp)
+    Tests/ModelTests.cpp)
 target_compile_definitions(MiditinTests PRIVATE ${MDT_DEFINITIONS})
 target_include_directories(MiditinTests PRIVATE Source Tests)
 target_link_libraries(MiditinTests

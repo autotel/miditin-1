@@ -52,8 +52,9 @@ releases it otherwise, so an edit can never strand one.
 ## Host parameters vs Patch
 
 Host parameters (`ParamRegistry.cpp`) are the prototype's **sliders**: continuous performance
-controls and integer knobs (slices, ball count, grid division, melody length, root, OCT LEN…).
-`Patch` holds everything **chosen** rather than turned: kinds, modes, orders, toggles, scale type,
+controls and integer knobs (slices, ball count, grid division, melody length, OCT LEN…).
+`Patch` holds everything **chosen** rather than turned — the prototype's segmented controls,
+toggles and click targets: kinds, modes, orders, sync/retrig/wrap, scale type, root, digital base,
 the typed arpeggio, the melody grid, the pitch-class set, the CC number. Choices reshape the chain or
 are routing; automating them mid-note is how notes hang. This keeps the rule one line long.
 

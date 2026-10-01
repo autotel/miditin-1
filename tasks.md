@@ -9,21 +9,6 @@ Source for every phase: `miditin 1 - spec.md` (§ numbers below) and the v2 prot
 Port behaviour from the prototype; do not reinvent it. Each phase ends with `./build.sh test` green
 and one commit per task.
 
-## Phase 1 -- state spine
-
-- [opus] `ParamRegistry` (single table, mepSynth pattern) for every continuous control in the
-  spec: energy rate / sync division / center / depth / filter time, pulse core params and their
-  energy offset/scale, slices, ball count, bounce, base, swing, melody length, transform root /
-  octave / oct len, gate. Decide which become host parameters (continuous performance controls,
-  yes; structural choices, no -- see CLAUDE.md) and record the why in `wiki/architecture.md`.
-- [opus] `Patch` (everything, incl. structural state: typed arpeggio, melody grid with ties,
-  pitch-class set, kinds and modes) with `getStateInformation` round-trip; `EngineState` built on
-  the message thread, published to the audio thread, outgoing state swapped back (mepSynth
-  `EngineState` handoff). Tests: round-trip, publish/swap does not free on the audio side.
-- [opus] UI snapshot channel audio → message thread: per-voice energy history point, wheel angle,
-  ball positions, digital playhead, generator step, last tone → note mapping, pulse events with
-  strength, lit output notes. Lock-free, fixed size, latest-wins; UI polls at its frame rate.
-
 ## Phase 2 -- transform (§6)
 
 - [opus] `Transformer`: modes scale (8 scale types, root, whole-octave shift), set (pitch-class
@@ -69,6 +54,9 @@ and one commit per task.
 
 ## Phase 6 -- MIDI engine (§2, §7)
 
+- [opus] Processor state: `getStateInformation` = APVTS + `Patch::toXml`, round-trip test;
+  `Patch` published through `TripleBuffer`; `UiSnapshot` (per-voice energy, wheel angle, balls,
+  digital playhead, generator step, last tone -> note, pulse events, lit notes) through another.
 - [opus] Wire the chain in `processBlock`: control-rate tick, sample-accurate output events,
   strength → velocity, gate length, active-note tracking and guaranteed note-offs (see CLAUDE.md
   invariant). Mono: one chain. Poly: preallocated pool (choose a cap, e.g. 16), a chain per held

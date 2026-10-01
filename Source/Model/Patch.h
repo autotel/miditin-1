@@ -1,0 +1,82 @@
+#pragma once
+#include <array>
+#include <cstdint>
+#include <memory>
+#include <vector>
+#include <juce_core/juce_core.h>
+
+/** Everything chosen rather than turned: kinds, modes, toggles, the typed arpeggio, the melody
+    grid, the pitch-class set. Not automatable (CLAUDE.md). Trivially copyable on purpose -- the
+    message thread hands the audio thread whole copies through a `TripleBuffer`. Defaults are the
+    v2 prototype's initial state. */
+namespace mdt
+{
+enum class VoiceMode     : uint8_t { mono, poly };
+enum class EnergySource  : uint8_t { osc, vel, note, cc };
+enum class Shape         : uint8_t { sine, tri, saw, sh };
+enum class EnergyFilter  : uint8_t { off, lpf, hpf };
+enum class PulseKind     : uint8_t { wheel, shaker, digital, midiIn };
+enum class ModMode       : uint8_t { scale, offset };
+enum class GenKind       : uint8_t { arp, input, melody };
+enum class Order         : uint8_t { up, down, upDown, random, asTyped };
+enum class RunMode       : uint8_t { free, resetOnIn };
+enum class TransformMode : uint8_t { scale, set, held };
+enum class ScaleType     : uint8_t { major, minor, dorian, phrygian, pentMajor, pentMinor, wholeTone, chromatic };
+
+inline constexpr int maxArpTones = 16;
+inline constexpr int melodySteps = 16;
+/** Melody cells: a tone -7..+7, or one of these. */
+inline constexpr int8_t melRest = INT8_MIN;
+inline constexpr int8_t melTie  = INT8_MAX;
+
+struct Patch
+{
+    bool         run       = true;
+    VoiceMode    voiceMode = VoiceMode::mono;
+
+    EnergySource enSource  = EnergySource::osc;
+    Shape        enShape   = Shape::sine;
+    bool         enSync    = false;
+    bool         enRetrig  = false;
+    EnergyFilter enFilter  = EnergyFilter::off;
+    int          ccNumber  = 1;
+
+    PulseKind    pulse     = PulseKind::wheel;
+    /** Per generator: wheel, shaker, digital. */
+    std::array<ModMode, 3> modMode { ModMode::scale, ModMode::scale, ModMode::scale };
+    int          digBase   = 2;   // 2, 3, 5 or 7
+
+    GenKind      gen       = GenKind::arp;
+    Order        order     = Order::up;
+    std::array<int8_t, maxArpTones> arp { 0, 2, 4, 7, 9 };
+    int          arpCount  = 5;
+    std::array<int8_t, melodySteps> melody { 0, melTie, 2, 4, 7, melTie, melTie, 2, 0, 2, 4, 5, 4, melTie, 2, -1 };
+    bool         melTranspose = false;
+    RunMode      runMode   = RunMode::free;
+
+    TransformMode tfMode   = TransformMode::scale;
+    int          root      = 9;   // A
+    ScaleType    scale     = ScaleType::minor;
+    uint16_t     pcs       = (1 << 0) | (1 << 3) | (1 << 5) | (1 << 7) | (1 << 10);
+    bool         wrap      = true;
+
+    /** The internal preview synth (§7 Sound). The Standalone turns it on at startup. */
+    bool         preview   = false;
+
+    bool operator== (const Patch&) const = default;
+
+    // -- the typed arpeggio ---------------------------------------------------
+    /** "0 2 4 7 9", "-3, 0 5": every integer in the text, clamped to ±24, at most 16. */
+    void setArpText (const juce::String&);
+    juce::String arpText() const;
+
+    juce::XmlElement toXml() const;
+    /** Anything missing or unreadable keeps its default. */
+    static Patch fromXml (const juce::XmlElement&);
+};
+
+static_assert (std::is_trivially_copyable_v<Patch>);
+
+/** The scale tables, as the prototype's `SCALES`. */
+const std::vector<int>& scaleSteps (ScaleType);
+} // namespace mdt
