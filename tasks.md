@@ -11,13 +11,6 @@ and one commit per task.
 
 ## Phase 0 -- foundation
 
-- [opus] `CMakeLists.txt` modelled on `../mepSynth-plugin`: JUCE from `../JUCE`, C++20, target
-  `Miditin`, `PRODUCT_NAME "miditin 1"`, `COMPANY_NAME "Autotel"`, manufacturer `Autl`, plugin code
-  `Mdt1`, `FORMATS VST3 Standalone`, `IS_SYNTH TRUE` + `NEEDS_MIDI_INPUT TRUE` +
-  `NEEDS_MIDI_OUTPUT TRUE` (VST3 has no MIDI-effect category; an instrument with MIDI out is what
-  REAPER routes), `COPY_PLUGIN_AFTER_BUILD FALSE`. A `MiditinTests` console target linking the
-  core sources, with the runner copied from mepSynth `Tests/main.cpp`. Empty processor + editor at
-  900 × 600 so the build is green end to end. `./build.sh test` passes with a placeholder test.
 - [sonnet] Bundle IBM Plex Mono 400/500/600 and IBM Plex Sans Condensed 500/600 via
   `juce_add_binary_data`, plus `Resources/Fonts/OFL-IBMPlex.txt`. Port mepSynth `Source/UI/Fonts`
   (`drawTracked()`) with the prototype's type roles. Palette as named colours in `Source/UI/Theme.h`
