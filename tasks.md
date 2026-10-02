@@ -11,8 +11,6 @@ and one commit per task.
 
 ## Phase 8 -- presets and polish
 
-- [sonnet] Preset save/browse via `../autotel-plugin-presets-librarian` (`atl`), as mepSynth
-  consumes it; a handful of factory presets, one per pulse generator.
 - [opus] Load in REAPER: MIDI out routed to a synth track, sync against the host transport, state
   restore on project reload, no hanging notes on bypass/removal. Record findings in `wiki/testing.md`.
 

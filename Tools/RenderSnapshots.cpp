@@ -1,6 +1,9 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <iostream>
+#include <PresetPanel.h>
+#include "Model/Document.h"
 #include "UI/Shell.h"
+#include "UI/Theme.h"
 
 /** Renders the editor to PNGs with no window: a headless engine runs a few seconds of a scene,
     then the shell paints its latest snapshot into an image. The dev machine is a Wayland session
@@ -52,12 +55,44 @@ struct FakeHost final : Host
     }
 };
 
+/** The librarian against a scratch folder, so the sheet shows the built-ins and nothing personal. */
+struct FakePresets final : atl::PresetHost
+{
+    juce::File folder = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("miditin-snap-presets");
+    juce::ValueTree captureDocument() override { return makeDocument ({}, ParamValues::defaults()); }
+    void applyDocument (const juce::ValueTree&) override {}
+    juce::File presetFolder() const override { return folder; }
+    void setPresetFolder (const juce::File&) override {}
+    bool documentHasUnsavedChanges() const override { return false; }
+};
+
 void render (const juce::File& dir, const juce::String& name, const std::function<void (FakeHost&)>& setup,
-             std::vector<int> notes = {}, double seconds = 4)
+             std::vector<int> notes = {}, double seconds = 4, bool presets = false)
 {
     FakeHost host;
     setup (host);
     Shell shell (host);
+    FakePresets presetHost;
+    const atl::PresetFormat format { ".miditin", documentType };
+    atl::PresetPanel panel (presetHost, format);
+    std::vector<juce::MemoryBlock> data;
+    std::vector<atl::BuiltInPreset> builtIns;
+    data.reserve (factoryPresets().size());
+    for (const auto& f : factoryPresets())
+    {
+        juce::MemoryOutputStream out;
+        makeDocument (f.patch, f.pv).writeToStream (out);
+        data.push_back (out.getMemoryBlock());
+        builtIns.push_back ({ f.name, f.category, data.back().getData(), (int) data.back().getSize() });
+    }
+    atl::PresetPanelColours c;
+    c.background = theme::paper; c.panel = theme::shade; c.text = theme::ink; c.textDim = theme::pillText;
+    c.accent = theme::accent; c.outline = theme::line2;
+    panel.setColours (c);
+    panel.setBuiltIns (builtIns);
+    shell.setPresetPanel (&panel);
+    shell.setPresetName ("Wheel arpeggio");
+    panel.setVisible (presets);
     host.run (seconds, shell, notes);
     const int scale = 2;
     juce::Image img (juce::Image::ARGB, Shell::width * scale, Shell::height * scale, true);
@@ -81,6 +116,7 @@ int main (int argc, char** argv)
     dir.createDirectory();
 
     render (dir, "default", [] (FakeHost&) {});
+    render (dir, "presets", [] (FakeHost&) {}, {}, 0.5, true);
     render (dir, "shaker-poly-melody", [] (FakeHost& h) {
         h.p.pulse = PulseKind::shaker;
         h.p.voiceMode = VoiceMode::poly;

@@ -2,9 +2,10 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "Engine/Engine.h"
 #include "Engine/PreviewSynth.h"
+#include "Model/Document.h"
 #include "Model/TripleBuffer.h"
 
-class MiditinProcessor final : public juce::AudioProcessor
+class MiditinProcessor final : public juce::AudioProcessor, private juce::AudioProcessorParameter::Listener
 {
 public:
     MiditinProcessor();
@@ -46,6 +47,17 @@ public:
     struct UiEvent { enum Type { noteOn, noteOff, releaseHeld, kick } type; int note; float vel; };
     void post (UiEvent);
 
+    /** The whole sound as a preset document (Model/Document.h), and back. */
+    juce::ValueTree captureDocument() const;
+    void applyDocument (const juce::ValueTree&);
+
+    /** Which preset is open, for the librarian: its key and name. Kept here and in the saved state
+        because the editor -- and the panel in it -- is destroyed whenever the window closes. */
+    juce::String openPresetKey, openPresetName;
+    /** Any edit since the last load or save. A flag, because the librarian polls it. */
+    bool hasUnsavedChanges() const noexcept { return dirty.load(); }
+    void markClean() noexcept { dirty = false; }
+
     /** The latest snapshot the audio thread published; stable until the next call. */
     const mdt::UiSnapshot& snapshot() noexcept { snapshots.fetch(); return snapshots.front(); }
 
@@ -65,7 +77,11 @@ private:
     std::array<bool, 128> pendingOffs {};
     bool bypassed = false;
 
+    std::atomic<bool> dirty { false };
+
     void publishSnapshot();
+    void parameterValueChanged (int, float) override { dirty = true; }
+    void parameterGestureChanged (int, bool) override {}
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MiditinProcessor)
 };

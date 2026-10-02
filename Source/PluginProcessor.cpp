@@ -33,11 +33,14 @@ MiditinProcessor::MiditinProcessor()
 {
     for (int i = 0; i < numParams; ++i)
         raw[(size_t) i] = apvts.getRawParameterValue (params()[(size_t) i].id);
+    for (auto* prm : getParameters())
+        prm->addListener (this);
 
     // The preview synth is the Standalone's only voice; in a DAW the MIDI goes to a real one.
     Patch p;
     p.preview = wrapperType == wrapperType_Standalone;
     setPatch (p);
+    markClean();
 }
 
 void MiditinProcessor::setPatch (const Patch& p)
@@ -46,6 +49,7 @@ void MiditinProcessor::setPatch (const Patch& p)
     patches.back() = p;
     patches.publish();
     ++patchVersion;
+    dirty = true;
 }
 
 void MiditinProcessor::post (UiEvent e)
@@ -139,24 +143,50 @@ void MiditinProcessor::publishSnapshot()
 
 juce::AudioProcessorEditor* MiditinProcessor::createEditor() { return new MiditinEditor (*this); }
 
+juce::ValueTree MiditinProcessor::captureDocument() const
+{
+    ParamValues pv;
+    for (int i = 0; i < numParams; ++i)
+        pv.v[(size_t) i] = raw[(size_t) i]->load();
+    return makeDocument (patch, pv);
+}
+
+void MiditinProcessor::applyDocument (const juce::ValueTree& doc)
+{
+    Patch p;
+    ParamValues pv;
+    readDocument (doc, p, pv);
+    // The Standalone's preview is a property of where it runs, not of the sound.
+    p.preview = patch.preview;
+    for (int i = 0; i < numParams; ++i)
+        if (auto* prm = apvts.getParameter (params()[(size_t) i].id))
+            prm->setValueNotifyingHost (prm->convertTo0to1 (pv.v[(size_t) i]));
+    setPatch (p);
+}
+
 void MiditinProcessor::getStateInformation (juce::MemoryBlock& dest)
 {
-    juce::XmlElement root ("Miditin");
-    if (auto params = apvts.copyState().createXml())
-        root.addChildElement (params.release());
-    root.addChildElement (new juce::XmlElement (patch.toXml()));
-    copyXmlToBinary (root, dest);
+    auto root = captureDocument();
+    root.setProperty ("openPresetKey", openPresetKey, nullptr);
+    root.setProperty ("openPresetName", openPresetName, nullptr);
+    root.setProperty ("preview", patch.preview, nullptr);
+    if (const auto xml = root.createXml())
+        copyXmlToBinary (*xml, dest);
 }
 
 void MiditinProcessor::setStateInformation (const void* data, int size)
 {
-    const auto root = getXmlFromBinary (data, size);
-    if (root == nullptr || ! root->hasTagName ("Miditin"))
+    const auto xml = getXmlFromBinary (data, size);
+    if (xml == nullptr)
         return;
-    if (auto* params = root->getChildByName (apvts.state.getType()))
-        apvts.replaceState (juce::ValueTree::fromXml (*params));
-    if (auto* p = root->getChildByName ("Patch"))
-        setPatch (Patch::fromXml (*p));
+    const auto root = juce::ValueTree::fromXml (*xml);
+    applyDocument (root);
+    auto p = patch;
+    p.preview = root.getProperty ("preview", p.preview);
+    setPatch (p);
+    openPresetKey = root["openPresetKey"].toString();
+    openPresetName = root["openPresetName"].toString();
+    markClean();
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new MiditinProcessor(); }

@@ -19,11 +19,16 @@ public:
     explicit Shell (Host&);
     ~Shell() override;
 
+    /** The librarian, shown over everything below the header while PRESETS is on. Borrowed. */
+    void setPresetPanel (juce::Component*);
+    void setPresetName (const juce::String&);
+    /** The patch changed behind the shell's back (a preset load): re-read it. */
+    void patchReloaded();
+
     /** One frame without the timer: the snapshot tool calls this before painting. */
     void advanceFrame();
 
     void paint (juce::Graphics&) override;
-    void paintOverChildren (juce::Graphics&) override;
     void resized() override;
     void mouseMove (const juce::MouseEvent&) override;
     void mouseDown (const juce::MouseEvent&) override;
@@ -55,7 +60,9 @@ private:
     } drag;
 
     // header
-    BoxButton runBtn { "", fonts::headerButton }, voiceBtn { "MONO", fonts::headerButton }, soundBtn { "", fonts::headerButton };
+    BoxButton runBtn { "", fonts::headerButton }, voiceBtn { "MONO", fonts::headerButton }, soundBtn { "", fonts::headerButton },
+              presetsBtn { "PRESETS", fonts::headerButton };
+    juce::Component* presetPanel = nullptr;
     std::unique_ptr<RangeRow> bpm;
     // energy
     Segmented enSource { { "OSC", "VEL", "NOTE", "CC" }, 4 };

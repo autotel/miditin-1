@@ -137,6 +137,28 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
 
 Shell::~Shell() { stopTimer(); }
 
+void Shell::setPresetPanel (juce::Component* panel)
+{
+    presetPanel = panel;
+    addAndMakeVisible (presetsBtn);
+    addChildComponent (*panel);
+    panel->setBounds (0, headerH, width, height - headerH);
+    layoutControls();
+}
+
+void Shell::setPresetName (const juce::String& name)
+{
+    // The open preset names the button that opens the librarian.
+    presetsBtn.setText (name.isEmpty() ? juce::String ("PRESETS") : name);
+}
+
+void Shell::patchReloaded()
+{
+    patch = host.patch();
+    seenVersion = host.patchVersion();
+    syncControls();
+}
+
 void Shell::edit (const std::function<void (Patch&)>& change)
 {
     Patch next = patch;
@@ -219,10 +241,12 @@ void Shell::layoutControls()
         int right = width - 16;
         const int y = (headerH - 25) / 2;
         auto place = [&] (juce::Component& c, int w) { c.setBounds (right - w, y, w, 25); right -= w + 10; };
-        place (soundBtn, 90);
+        place (soundBtn, 84);
         place (voiceBtn, 52);
         place (*bpm, 22 + 6 + 70 + 6 + 22);
         place (runBtn, 66);
+        if (presetPanel != nullptr)
+            place (presetsBtn, 120);
     }
 
     // ENERGY
@@ -402,11 +426,16 @@ void Shell::paint (juce::Graphics& g)
     fonts::text (g, "miditin 1", 16, 29, fonts::title, theme::ink);
     g.setColour (theme::muted);
     const float titleW = juce::GlyphArrangement::getStringWidth (fonts::font (fonts::title), "miditin 1");
-    fonts::drawTracked (g, fonts::utf8 ("ENERGY \xe2\x86\x92 PULSE \xe2\x86\x92 GENERATE \xe2\x86\x92 TRANSFORM \xe2\x86\x92 MIDI"),
-                        { 16 + titleW + 10, 0, 400, (float) headerH }, fonts::caption, juce::Justification::centredLeft);
+    const auto caption = fonts::utf8 ("ENERGY \xe2\x86\x92 PULSE \xe2\x86\x92 GENERATE \xe2\x86\x92 TRANSFORM \xe2\x86\x92 MIDI");
+    fonts::drawTracked (g, caption, { 16 + titleW + 10, 0, 400, (float) headerH }, fonts::caption, juce::Justification::centredLeft);
 
     drawModuleTitles (g);
     drawBottomText (g);
+    for (const auto& [text, r] : sideLabels)
+    {
+        g.setColour (theme::muted);
+        fonts::drawTracked (g, text, r, fonts::label, juce::Justification::centredLeft);
+    }
 
     const auto f = frame();
     const auto local = views::anchorsFor (f);
@@ -436,15 +465,6 @@ void Shell::paint (juce::Graphics& g)
         juce::Graphics::ScopedSaveState s2 (g);
         g.addTransform (juce::AffineTransform::translation (keyboard (side).getPosition()));
         side ? views::drawOutKeys (g, f) : views::drawInKeys (g, f);
-    }
-}
-
-void Shell::paintOverChildren (juce::Graphics& g)
-{
-    for (const auto& [text, r] : sideLabels)
-    {
-        g.setColour (theme::muted);
-        fonts::drawTracked (g, text, r, fonts::label, juce::Justification::centredLeft);
     }
 }
 

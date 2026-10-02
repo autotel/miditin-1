@@ -77,7 +77,8 @@ void BoxButton::paint (juce::Graphics& g)
     g.setColour (theme::ink);
     g.drawRect (b, 1.0f);
     g.setColour (lit ? theme::paper : theme::ink);
-    fonts::drawTracked (g, text, b, role, juce::Justification::centred);
+    g.setFont (fonts::font (role));
+    g.drawText (text, b.reduced (6, 0), juce::Justification::centred, true);   // a long preset name ellipsises
 }
 
 // -- RangeRow ----------------------------------------------------------------------------------

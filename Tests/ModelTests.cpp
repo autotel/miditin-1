@@ -108,3 +108,47 @@ struct TripleBufferTests final : juce::UnitTest
 static ParamRegistryTests paramRegistryTests;
 static PatchTests patchTests;
 static TripleBufferTests tripleBufferTests;
+
+#include "Model/Document.h"
+
+struct DocumentTests final : juce::UnitTest
+{
+    DocumentTests() : juce::UnitTest ("Document") {}
+
+    void runTest() override
+    {
+        beginTest ("round-trip: every parameter and the patch");
+        Patch p;
+        p.pulse = PulseKind::digital;
+        p.melody[3] = melTie;
+        auto pv = ParamValues::defaults();
+        for (int i = 0; i < numParams; ++i)
+            pv.v[(size_t) i] = params()[(size_t) i].max;
+        Patch p2;
+        ParamValues pv2;
+        readDocument (makeDocument (p, pv), p2, pv2);
+        expect (p2 == p);
+        expect (pv2.v == pv.v);
+
+        beginTest ("an invalid tree reads as the defaults; out-of-range values are clamped");
+        readDocument ({}, p2, pv2);
+        expect (p2 == Patch {});
+        expect (pv2.v == ParamValues::defaults().v);
+        auto doc = makeDocument ({}, ParamValues::defaults());
+        doc.getChildWithName ("Params").setProperty ("wh_slices", 99, nullptr);
+        readDocument (doc, p2, pv2);
+        expectEquals (pv2.i (P::whSlices), 24);
+
+        beginTest ("factory presets: one per pulse generator, each a valid document");
+        std::set<PulseKind> kinds;
+        for (const auto& f : factoryPresets())
+        {
+            kinds.insert (f.patch.pulse);
+            readDocument (makeDocument (f.patch, f.pv), p2, pv2);
+            expect (p2 == f.patch, f.name);
+        }
+        expectEquals ((int) kinds.size(), 4);
+    }
+};
+
+static DocumentTests documentTests;

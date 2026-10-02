@@ -7,6 +7,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../JUCE JUCE_build)
 
+# The shared preset librarian, consumed as mepSynth does. Added after JUCE, which it expects.
+set(ATL_PRESETS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../autotel-plugin-presets-librarian"
+    CACHE PATH "Where the shared Autotel presets librarian is checked out")
+add_subdirectory(${ATL_PRESETS_DIR} atl_presets_build)
+
 # IBM Plex Mono and IBM Plex Sans Condensed: SIL OFL 1.1 with Reserved Font Name "Plex". Embedded
 # byte-for-byte as IBM ships them -- subsetting or otherwise modifying a file would make it a
 # derivative that may not carry the name. Resources/Fonts/OFL-IBMPlex.txt ships with any binary.
@@ -36,6 +41,7 @@ juce_add_plugin(Miditin
 set(MDT_CORE_SOURCES
     Source/Model/ParamRegistry.cpp
     Source/Model/Patch.cpp
+    Source/Model/Document.cpp
     Source/Engine/Engine.cpp)
 
 # Drawing code the plugin and the snapshot tool share.
@@ -61,6 +67,7 @@ target_include_directories(Miditin PRIVATE Source)
 target_link_libraries(Miditin
     PRIVATE
         MiditinData
+        atl_presets_ui
         juce::juce_audio_utils
     PUBLIC
         juce::juce_recommended_config_flags
@@ -77,13 +84,16 @@ target_sources(MiditinTests PRIVATE
     Tests/GenerateTests.cpp
     Tests/EnergyTests.cpp
     Tests/PulseTests.cpp
-    Tests/EngineTests.cpp)
+    Tests/EngineTests.cpp
+    # The librarian's own tests run here: one runner per build tree.
+    ${ATL_PRESETS_TEST_SOURCES})
 target_compile_definitions(MiditinTests PRIVATE ${MDT_DEFINITIONS})
 target_include_directories(MiditinTests PRIVATE Source Tests)
 target_link_libraries(MiditinTests
     PRIVATE
+        atl_presets_ui
         juce::juce_audio_basics
-        juce::juce_events
+        juce::juce_data_structures
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
@@ -101,8 +111,10 @@ target_include_directories(MiditinSnap PRIVATE Source)
 target_link_libraries(MiditinSnap
     PRIVATE
         MiditinData
+        atl_presets_ui
         juce::juce_gui_basics
         juce::juce_audio_basics
+        juce::juce_data_structures
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
