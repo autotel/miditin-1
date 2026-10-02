@@ -50,7 +50,7 @@ struct PatchTests final : juce::UnitTest
 
         beginTest ("XML round-trip keeps every field");
         Patch q;
-        q.run = false; q.voiceMode = VoiceMode::poly; q.inChannel = 9; q.enSource = EnergySource::cc; q.enShape = Shape::sh; q.shakeMode = ShakeMode::follow;
+        q.voiceMode = VoiceMode::poly; q.inChannel = 9; q.outChannel = 12; q.enSource = EnergySource::cc; q.enShape = Shape::sh; q.shakeMode = ShakeMode::follow;
         q.enSync = true; q.enRetrig = true; q.enFilter = EnergyFilter::hpf; q.enEdge = EnergyEdge::neg; q.ccNumber = 74;
         q.pulse = PulseKind::digital; q.wheelMode = WheelMode::angle; q.midiInSource = MidiInSource::clock; q.clockDiv = 5;
         q.digBase = 5; q.gen = GenKind::melody; q.order = Order::asTyped; q.setArpText ("-7 0 12");

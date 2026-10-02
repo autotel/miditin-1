@@ -51,12 +51,24 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
     };
 
     // header
-    for (auto* c : { &runBtn, &voiceBtn, &soundBtn }) add (*c);
-    runBtn.onClick = [this] { edit ([] (Patch& p) { p.run = ! p.run; }); };
+    for (auto* c : { &voiceBtn, &soundBtn }) add (*c);
     voiceBtn.onClick = [this] { edit ([] (Patch& p) { p.voiceMode = p.voiceMode == VoiceMode::poly ? VoiceMode::mono : VoiceMode::poly; }); };
     soundBtn.onClick = [this] { edit ([] (Patch& p) { p.preview = ! p.preview; }); };
-    row (bpm, P::bpm, 22, 22);
-    bpm->valueLeft = true;
+    // CH picks the input channel; OUT is mono OMNI's output channel, the one case with no input
+    // channel to follow.
+    inChannel = std::make_unique<RangeRow> ("CH", 0.0f, 16.0f, 1.0f,
+        [this] { return (float) patch.inChannel; },
+        [this] (float v) { edit ([v] (Patch& p) { p.inChannel = (int) v; }); },
+        [] (float v) { return v < 0.5f ? juce::String ("OMNI") : juce::String ((int) v); }, 18, 30);
+    outChannel = std::make_unique<RangeRow> ("OUT", 1.0f, 16.0f, 1.0f,
+        [this] { return (float) patch.outChannel; },
+        [this] (float v) { edit ([v] (Patch& p) { p.outChannel = (int) v; }); },
+        [] (float v) { return juce::String ((int) v); }, 24, 18);
+    for (auto* r : { inChannel.get(), outChannel.get() })
+    {
+        r->valueLeft = true;
+        add (*r);
+    }
 
     // energy
     for (juce::Component* c : std::initializer_list<juce::Component*> { &enSource, &enShape, &syncBtn, &retrigBtn, &enFilter, &enEdge }) add (*c);
@@ -134,11 +146,6 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
 
     // in / out
     add (releaseBtn);
-    inChannel = std::make_unique<RangeRow> ("CH", 0.0f, 16.0f, 1.0f,
-        [this] { return (float) patch.inChannel; },
-        [this] (float v) { edit ([v] (Patch& p) { p.inChannel = (int) v; }); },
-        [] (float v) { return v < 0.5f ? juce::String ("OMNI") : juce::String ((int) v); }, 18, 30);
-    add (*inChannel);
     releaseBtn.onClick = [this] { host.releaseHeld(); };
     row (gate, P::gate, 30, 40);
     gate->valueLeft = true;
@@ -203,8 +210,6 @@ void Shell::edit (const std::function<void (Patch&)>& change)
 void Shell::syncControls()
 {
     const auto& p = patch;
-    runBtn.setText (p.run ? fonts::utf8 ("\xe2\x96\xa0 STOP") : fonts::utf8 ("\xe2\x96\xb6 RUN"));
-    runBtn.setOn (p.run);
     voiceBtn.setText (p.voiceMode == VoiceMode::poly ? "POLY" : "MONO");
     soundBtn.setText (p.preview ? "SOUND ON" : "SOUND OFF");
     soundBtn.setOn (p.preview);
@@ -277,8 +282,11 @@ void Shell::layoutControls()
         auto place = [&] (juce::Component& c, int w) { c.setBounds (right - w, y, w, 25); right -= w + 10; };
         place (soundBtn, 84);
         place (voiceBtn, 52);
-        place (*bpm, 22 + 6 + 70 + 6 + 22);
-        place (runBtn, 66);
+        const bool out = p.voiceMode == VoiceMode::mono && p.inChannel == 0;
+        outChannel->setVisible (out);
+        if (out)
+            place (*outChannel, 24 + 6 + 40 + 6 + 18);
+        place (*inChannel, 18 + 6 + 50 + 6 + 30);
         if (presetPanel != nullptr)
             place (presetsBtn, 120);
     }
@@ -406,8 +414,7 @@ void Shell::layoutControls()
     {
         const int y = bottomTop + 48 + (int) views::KH + 7;
         releaseBtn.setBounds (450 - pad - 80, y, 80, buttonH);
-        inChannel->setBounds (450 - pad - 88 - 120, y, 120, buttonH);
-        inHeldArea = juce::Rectangle<float> ((float) pad, (float) y, 450.0f - 2 * pad - 216, (float) buttonH);
+        inHeldArea = juce::Rectangle<float> ((float) pad, (float) y, 450.0f - 2 * pad - 88, (float) buttonH);
         logArea = juce::Rectangle<float> (450.0f + pad, (float) y, 450.0f - 2 * pad, (float) buttonH);
 
         // GATE and VELOCITY: what shapes the output, just above the OUT title, under the
@@ -472,7 +479,7 @@ void Shell::advanceFrame (double seconds)
         if (auto* r = dynamic_cast<RangeRow*> (c))
             r->refresh();
 
-    // The plot and the cables move with engine time: stopped audio or RUN off holds them still.
+    // The plot and the cables move with engine time: stopped audio holds them still.
     if (shownT <= before)
         return;
 

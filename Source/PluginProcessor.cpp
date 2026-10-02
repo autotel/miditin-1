@@ -59,11 +59,8 @@ void MiditinProcessor::post (UiEvent e)
 void MiditinProcessor::prepareToPlay (double sampleRate, int)
 {
     // A re-prepare would forget what is sounding; note it so the next block can release it.
-    UiSnapshot& s = snapshots.back();
-    engine.fillSnapshot (s);
     for (int m = 0; m < 128; ++m)
-        if (s.notes[(size_t) m].on)
-            pendingOffs[(size_t) m] = s.notes[(size_t) m].ch;
+        pendingOffs[(size_t) m] |= engine.soundingChannels (m);
 
     engine.prepare (sampleRate);
     preview.prepare (sampleRate);
@@ -107,8 +104,9 @@ void MiditinProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     midi.clear();
 
     for (int m = 0; m < 128; ++m)
-        if (const int ch = std::exchange (pendingOffs[(size_t) m], 0))
-            midi.addEvent (juce::MidiMessage::noteOff (ch, m), 0);
+        for (int ch = 1, bits = std::exchange (pendingOffs[(size_t) m], 0); ch <= 16; ++ch)
+            if (bits >> (ch - 1) & 1)
+                midi.addEvent (juce::MidiMessage::noteOff (ch, m), 0);
 
     fifo.read (fifo.getNumReady()).forEach ([&] (int i) {
         const auto& e = events[(size_t) i];

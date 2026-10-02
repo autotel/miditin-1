@@ -35,6 +35,15 @@ int Engine::sounding() const noexcept
     return n;
 }
 
+uint16_t Engine::soundingChannels (int m) const noexcept
+{
+    uint16_t bits = 0;
+    for (int ch = 1; ch <= 16; ++ch)
+        if (notes[(size_t) slot (ch, m)].on)
+            bits |= (uint16_t) (1 << (ch - 1));
+    return bits;
+}
+
 template <typename Fn>
 void Engine::forEachRunningChain (Fn&& fn)
 {
@@ -101,9 +110,6 @@ void Engine::applyPatch (const Patch& next, juce::MidiBuffer& out)
         global.lfoOff = clock - global.lfo.ph * cycle;
         for (auto& v : voices) v.lfoOff = clock - v.lfo.ph * cycle;
     }
-
-    if (old.run && ! next.run)
-        releaseAll (out, 0);
 }
 
 // -- block -----------------------------------------------------------------------------------------
@@ -165,8 +171,6 @@ void Engine::process (const Patch& nextPatch, const ParamValues& values, const T
         for (; it != in.end() && (*it).samplePosition <= pos; ++it)
             handle ((*it).getMessage(), out, (*it).samplePosition);
 
-        if (! patch.run)
-            continue;
         clock = playing ? tr.ppq + (nextTick / sampleRate) * bpm / 60.0 : clock + dt * bpm / 60.0;
         const double dClock = clock - prevClock;
         prevClock = clock;
@@ -195,7 +199,7 @@ void Engine::handle (const juce::MidiMessage& m, juce::MidiBuffer& out, int pos)
     if (m.isNoteOn())
         inputNoteOn (m.getNoteNumber(), m.getFloatVelocity(), ch, out, pos);
     else if (m.isNoteOff())
-        inputNoteOff (m.getNoteNumber(), out, pos);
+        inputNoteOff (m.getNoteNumber(), ch, out, pos);
     else if (m.isAllNotesOff() || m.isAllSoundOff())
         releaseHeld (out, pos);
     else if (m.isController() && m.getControllerNumber() == patch.ccNumber)
@@ -214,10 +218,9 @@ void Engine::handle (const juce::MidiMessage& m, juce::MidiBuffer& out, int pos)
 void Engine::inputNoteOn (int n, float vel, int ch, juce::MidiBuffer& out, int pos)
 {
     global.in.vel = vel;
-    // ponytail: held notes are keyed by number -- the same note on two channels is one, first
-    // press wins; per-channel keys if OMNI poly ever needs both.
-    if (std::find (held.begin(), held.begin() + numHeld, n) != held.begin() + numHeld)
-        return;
+    for (int i = 0; i < numHeld; ++i)
+        if (heldMatches (i, n, ch))
+            return;
     if (numHeld < (int) held.size())
     {
         heldVel[(size_t) numHeld] = vel;
@@ -242,17 +245,22 @@ void Engine::inputNoteOn (int n, float vel, int ch, juce::MidiBuffer& out, int p
     if (patch.runMode == RunMode::resetOnIn)
         global.digital.beat = 0;
 
-    if (patch.pulse == PulseKind::midiIn && patch.midiInSource == MidiInSource::notes && patch.run)
+    if (patch.pulse == PulseKind::midiIn && patch.midiInSource == MidiInSource::notes)
         pulse (*target, global.in.vel > 0 ? global.in.vel : 0.8f, out, pos);
 }
 
-void Engine::inputNoteOff (int n, juce::MidiBuffer& out, int pos)
+bool Engine::heldMatches (int i, int n, int ch) const noexcept
+{
+    return held[(size_t) i] == n && (! poly() || heldCh[(size_t) i] == ch);
+}
+
+void Engine::inputNoteOff (int n, int ch, juce::MidiBuffer& out, int pos)
 {
     global.in.vel = 0;   // spec §3: vel drops to 0 on note-off
-    dropVoice (n, out, pos);
+    dropVoice (n, ch, out, pos);
     int kept = 0;
     for (int i = 0; i < numHeld; ++i)
-        if (held[(size_t) i] != n)
+        if (! heldMatches (i, n, ch))
         {
             heldVel[(size_t) kept] = heldVel[(size_t) i];
             heldCh[(size_t) kept] = heldCh[(size_t) i];
@@ -267,25 +275,25 @@ void Engine::releaseHeld (juce::MidiBuffer& out, int pos)
     global.in.vel = 0;
     for (auto& v : voices)
         if (v.active)
-            dropVoice (v.note, out, pos);
+            dropVoice (v.note, v.ch, out, pos);
     numHeld = 0;
     rebuild();
 }
 
 Chain& Engine::claimVoice (int n, int ch, juce::MidiBuffer& out, int pos)
 {
-    dropVoice (n, out, pos);
-    Chain* slot = nullptr;
+    dropVoice (n, ch, out, pos);
+    Chain* spot = nullptr;
     for (auto& v : voices)
-        if (! v.active) { slot = &v; break; }
-    if (slot == nullptr)
+        if (! v.active) { spot = &v; break; }
+    if (spot == nullptr)
     {
         // Full: the oldest voice gives way.
-        slot = &*std::min_element (voices.begin(), voices.end(), [] (auto& a, auto& b) { return a.age < b.age; });
-        dropVoice (slot->note, out, pos);
+        spot = &*std::min_element (voices.begin(), voices.end(), [] (auto& a, auto& b) { return a.age < b.age; });
+        dropVoice (spot->note, spot->ch, out, pos);
     }
 
-    auto& v = *slot;
+    auto& v = *spot;
     v = Chain();
     v.active = true;
     v.note = n;
@@ -314,11 +322,11 @@ void Engine::restartLfo (Chain& c)
     c.lfoOff = clock - c.lfo.ph * syncBeats[std::clamp (pv.i (P::enDiv), 0, 7)];
 }
 
-void Engine::dropVoice (int n, juce::MidiBuffer& out, int pos)
+void Engine::dropVoice (int n, int ch, juce::MidiBuffer& out, int pos)
 {
     for (auto& v : voices)
     {
-        if (! v.active || v.note != n)
+        if (! v.active || v.note != n || v.ch != ch)
             continue;
         if (v.melNote >= 0 && notes[(size_t) v.melNote].on && notes[(size_t) v.melNote].until >= holdForever)
             noteOff (v.melNote, out, pos);
@@ -379,9 +387,9 @@ void Engine::tick (juce::MidiBuffer& out, int pos, double dClock)
         }
     });
 
-    for (int m = 0; m < 128; ++m)
-        if (notes[(size_t) m].on && t >= notes[(size_t) m].until)
-            noteOff (m, out, pos);
+    for (int k = 0; k < (int) notes.size(); ++k)
+        if (notes[(size_t) k].on && t >= notes[(size_t) k].until)
+            noteOff (k, out, pos);
 }
 
 void Engine::stepPulse (Chain& c, juce::MidiBuffer& out, int pos, double dClock)
@@ -462,10 +470,12 @@ void Engine::pulse (Chain& c, float strength, juce::MidiBuffer& out, int pos)
     }
 
     const auto m = pool.transform (step.value, ref);
+    // Out on CH; under OMNI poly keeps each voice's channel, mono uses OUT.
+    const int ch = poly() ? c.ch : patch.inChannel > 0 ? patch.inChannel : patch.outChannel;
     mappings[(size_t) mapNext] = { step.value, m.value_or (-1), t };
     mapNext = (mapNext + 1) % (int) mappings.size();
     if (patch.gen == GenKind::melody)
-        c.melNote = m.value_or (-1);
+        c.melNote = m ? slot (ch, *m) : -1;
     if (! m)
         return;
 
@@ -473,21 +483,20 @@ void Engine::pulse (Chain& c, float strength, juce::MidiBuffer& out, int pos)
     // the voice's own note; mono: the latest still held (in.vel drops on any note-off).
     const float inVel = poly() ? c.in.vel : heldVel[(size_t) numHeld - 1];
     const float level = c.energy * pv[P::velEnergy] + strength * pv[P::velPulse] + inVel * pv[P::velInput];
-    // Out on CH; under OMNI, poly keeps each voice's channel and mono uses channel 1.
-    noteOn (*m, poly() ? c.ch : std::max (1, patch.inChannel), level, step.value, out, pos);
+    noteOn (slot (ch, *m), level, step.value, out, pos);
     if (patch.gen == GenKind::melody && c.gen.nextIsTie (patch, melLen))
-        notes[(size_t) *m].until = holdForever;
+        notes[(size_t) slot (ch, *m)].until = holdForever;
 }
 
 // -- output ----------------------------------------------------------------------------------------
 
-void Engine::noteOn (int m, int ch, float level, int deg, juce::MidiBuffer& out, int pos)
+void Engine::noteOn (int k, float level, int deg, juce::MidiBuffer& out, int pos)
 {
-    const int vel = std::clamp ((int) std::lround (1 + level * 126), 1, 127);
-    if (notes[(size_t) m].on)
-        noteOff (m, out, pos);
-    out.addEvent (juce::MidiMessage::noteOn (ch, m, (juce::uint8) vel), pos);
-    notes[(size_t) m] = { true, vel, ch, t + pv[P::gate] / 1000.0 };
+    const int vel = std::clamp ((int) std::lround (1 + level * 126), 1, 127), m = k % 128;
+    if (notes[(size_t) k].on)
+        noteOff (k, out, pos);
+    out.addEvent (juce::MidiMessage::noteOn (k / 128 + 1, m, (juce::uint8) vel), pos);
+    notes[(size_t) k] = { true, vel, t + pv[P::gate] / 1000.0 };
 
     for (int i = std::min (logCount, (int) log.size() - 1); i > 0; --i)
         log[(size_t) i] = log[(size_t) i - 1];
@@ -495,20 +504,20 @@ void Engine::noteOn (int m, int ch, float level, int deg, juce::MidiBuffer& out,
     logCount = std::min (logCount + 1, (int) log.size());
 }
 
-void Engine::noteOff (int m, juce::MidiBuffer& out, int pos)
+void Engine::noteOff (int k, juce::MidiBuffer& out, int pos)
 {
-    auto& s = notes[(size_t) m];
+    auto& s = notes[(size_t) k];
     if (! s.on)
         return;
-    out.addEvent (juce::MidiMessage::noteOff (s.ch, m), pos);
+    out.addEvent (juce::MidiMessage::noteOff (k / 128 + 1, k % 128), pos);
     s.on = false;
     s.until = std::min (s.until, t);
 }
 
 void Engine::releaseAll (juce::MidiBuffer& out, int pos)
 {
-    for (int m = 0; m < 128; ++m)
-        noteOff (m, out, pos);
+    for (int k = 0; k < (int) notes.size(); ++k)
+        noteOff (k, out, pos);
     global.melNote = -1;
     for (auto& v : voices) v.melNote = -1;
 }
@@ -578,7 +587,11 @@ void Engine::fillSnapshot (UiSnapshot& s) const
 
     s.mappings = mappings;
     s.mapNext = mapNext;
-    s.notes = notes;
+    // By pitch for the OUT keyboard: one sounding on any channel, else the latest to end.
+    s.notes = {};
+    for (size_t k = 0; k < notes.size(); ++k)
+        if (auto& d = s.notes[k % 128]; notes[k].on > d.on || (notes[k].on == d.on && notes[k].until > d.until))
+            d = notes[k];
     s.held = held;
     s.heldCount = numHeld;
     s.seq = poly() ? polySeq : monoSeq;

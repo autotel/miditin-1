@@ -56,14 +56,15 @@ struct Rig
 
     int ons() const { int n = 0; for (auto& ev : out) n += ev.vel > 0; return n; }
 
-    /** Every note-on matched by a later note-off, never two ons without an off between. */
+    /** Every note-on matched by a later note-off on its channel, never two ons without an off between. */
     bool balanced() const
     {
-        std::array<int, 128> open {};
+        std::array<int, 17 * 128> open {};
         for (auto& ev : out)
         {
-            if (ev.vel > 0) { if (open[(size_t) ev.note]++ != 0) return false; }
-            else if (open[(size_t) ev.note]-- != 1) return false;
+            auto& o = open[(size_t) (ev.ch * 128 + ev.note)];
+            if (ev.vel > 0) { if (o++ != 0) return false; }
+            else if (o-- != 1) return false;
         }
         for (int c : open) if (c != 0) return false;
         return true;
@@ -90,11 +91,6 @@ struct EngineTests final : juce::UnitTest
             const int chord[] { 60, 64, 67 };
             for (size_t i = 0; i < played.size(); ++i)
                 expectEquals (played[i], chord[i % 3]);
-            r.run (2);
-            r.patch.run = false;
-            r.run (0.1);
-            expect (r.balanced());
-            expectEquals (r.e.sounding(), 0);
         }
 
         beginTest ("deterministic: same MIDI at any block size, same notes at any sample rate");
@@ -466,6 +462,36 @@ struct EngineTests final : juce::UnitTest
                 else expectEquals (ev.ch, 2);
             expectEquals (passed, 2);
             expect (r.ons() > 1);
+        }
+
+        beginTest ("CH: poly OMNI keeps the same note on two channels apart; mono OMNI plays on OUT");
+        {
+            Rig r;
+            r.patch.voiceMode = VoiceMode::poly;
+            r.noteOn (0.0, 60, 100, 3); r.noteOn (0.0, 60, 100, 5);
+            r.noteOff (1.0, 60, 3);
+            r.run (0.5);
+            expectEquals (r.e.activeVoices(), 2);
+            expectEquals (r.e.heldCount(), 2);
+            r.run (0.8);
+            expectEquals (r.e.activeVoices(), 1);
+            const auto after = r.out.size();
+            r.run (1.0);
+            expect (r.ons() > 0);
+            for (size_t i = after; i < r.out.size(); ++i)
+                if (r.out[i].vel > 0) expectEquals (r.out[i].ch, 5);
+            r.noteOff (r.now, 60, 5);
+            r.run (1.0);
+            expect (r.balanced());
+            expectEquals (r.e.sounding(), 0);
+        }
+        {
+            Rig r;
+            r.patch.outChannel = 7;
+            r.noteOn (0.0, 60, 100, 3); r.noteOn (0.0, 64, 100, 5);
+            r.run (3.0);
+            expect (r.ons() > 0);
+            expect (std::all_of (r.out.begin(), r.out.end(), [] (auto& ev) { return ev.ch == 7; }));
         }
 
         beginTest ("CH: changing channel with notes held releases everything");

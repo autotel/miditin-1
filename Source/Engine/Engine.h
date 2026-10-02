@@ -26,7 +26,7 @@ struct Chain
 {
     bool     active = false;
     int      note   = -1;     // poly: the input note that owns this chain
-    int      ch     = 1;      // poly: its MIDI channel, which the voice's notes go out on
+    int      ch     = 1;      // poly: its channel -- with `note` the voice's key, and its notes' channel
     uint32_t age    = 0;
     EnergyInputs in;
     double   lfoOff = 0;
@@ -36,7 +36,7 @@ struct Chain
     Shaker   shaker;
     Digital  digital;
     GenPos   gen;
-    int      melNote = -1;    // the melody note this chain may be holding through ties
+    int      melNote = -1;    // the `slot` of the melody note this chain may be holding through ties
     bool     hasDeg  = false;
     int      curDeg  = 0;
     Rng      rng;
@@ -64,7 +64,7 @@ struct UiSnapshot
         int    arpI = -1, arpPrev = -1, melI = -1;
     };
     struct Mapping { int deg = 0, note = -1; double t = -9; };
-    struct Sounding { bool on = false; int vel = 0, ch = 1; double until = -9; };
+    struct Sounding { bool on = false; int vel = 0; double until = -9; };
     struct LogItem { int note = 0, deg = 0; };
 
     uint64_t serial = 0;
@@ -79,7 +79,7 @@ struct UiSnapshot
     int    curDeg = 0;
     std::array<Mapping, 16> mappings {};   // ring, newest at mapNext - 1
     int    mapNext = 0;
-    std::array<Sounding, 128> notes {};
+    std::array<Sounding, 128> notes {};    // by pitch, any channel
     std::array<int, 128> held {};          // press order
     int    heldCount = 0;
     ToneSeq seq;
@@ -165,6 +165,8 @@ public:
     int heldCount() const noexcept { return numHeld; }
     int activeVoices() const noexcept;
     int sounding() const noexcept;
+    /** Bit `ch - 1` set for each channel note `m` is sounding on. */
+    uint16_t soundingChannels (int m) const noexcept;
 
 private:
     double sampleRate = 44100, samplesPerTick = 44.1, nextTick = 0;
@@ -194,8 +196,10 @@ private:
     ToneSeq polySeq, monoSeq;
     Pool  pool;
 
+    // Sounding output notes by `slot (ch, note)`: two channels' same pitch never cut each other.
     using Sounding = UiSnapshot::Sounding;
-    std::array<Sounding, 128> notes {};
+    std::array<Sounding, 16 * 128> notes {};
+    static constexpr int slot (int ch, int m) noexcept { return (ch - 1) * 128 + m; }
 
     // display-only state
     double pulseT = -9, genT = -9, inT = -9;
@@ -213,16 +217,18 @@ private:
     void rebuild();
     void handle (const juce::MidiMessage&, juce::MidiBuffer& out, int pos);
     void inputNoteOn (int note, float vel, int ch, juce::MidiBuffer& out, int pos);
-    void inputNoteOff (int note, juce::MidiBuffer& out, int pos);
+    void inputNoteOff (int note, int ch, juce::MidiBuffer& out, int pos);
+    /** Held note `i` is `note` -- on `ch` too in poly, where channels keep notes apart. */
+    bool heldMatches (int i, int note, int ch) const noexcept;
     Chain& claimVoice (int note, int ch, juce::MidiBuffer& out, int pos);
-    void dropVoice (int note, juce::MidiBuffer& out, int pos);
+    void dropVoice (int note, int ch, juce::MidiBuffer& out, int pos);
     /** RETRIG: the chain's LFO starts over at PHASE. */
     void restartLfo (Chain&);
     void tick (juce::MidiBuffer& out, int pos, double dClock);
     void stepPulse (Chain&, juce::MidiBuffer& out, int pos, double dClock);
     void pulse (Chain&, float strength, juce::MidiBuffer& out, int pos);
-    bool clockPulses() const noexcept { return patch.run && patch.pulse == PulseKind::midiIn && patch.midiInSource == MidiInSource::clock; }
-    void noteOn (int note, int ch, float level, int deg, juce::MidiBuffer& out, int pos);
-    void noteOff (int note, juce::MidiBuffer& out, int pos);
+    bool clockPulses() const noexcept { return patch.pulse == PulseKind::midiIn && patch.midiInSource == MidiInSource::clock; }
+    void noteOn (int slot, float level, int deg, juce::MidiBuffer& out, int pos);
+    void noteOff (int slot, juce::MidiBuffer& out, int pos);
 };
 } // namespace mdt

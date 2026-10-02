@@ -28,7 +28,7 @@ same MIDI at any sample rate or block size, which is what the tests rely on.
 
 Musical time (`clock`, in beats) follows host PPQ while the host is playing and free-runs at the
 host tempo — or the `bpm` parameter when there is no host tempo — when it is not. A transport stop
-releases every sounding note. The engine runs whenever RUN is on, transport or not, so a stopped DAW
+releases every sounding note. The engine always runs, transport or not, so a stopped DAW
 still plays live input.
 
 ## Chains and the voice pool
@@ -43,12 +43,13 @@ with `inverse` giving the pool index for poly voices and TRANSPOSE BY IN.
 
 ## Output notes
 
-`notes` tracks every sounding output note (128 slots, by number) with its channel and release
-time; the note-off goes out on the note-on's channel. CH (`Patch::inChannel`) picks the input:
-OMNI, or one channel whose notes are played while every other channel passes through untouched.
-Output is on CH; under OMNI, poly voices keep their input note's channel and mono uses 1. The
-IN keyboard plays on CH. Held notes stay keyed by number (same note on two channels = one).
-Note-offs go out at gate end, on retrigger, voice removal, structural change, RUN off, transport
+`notes` tracks every sounding output note by `slot (ch, note)` (16 x 128) with its release time,
+so the same pitch on two channels never cuts the other short. CH (`Patch::inChannel`) picks the
+input: OMNI, or one channel whose notes are played while every other channel passes through
+untouched. Output is on CH; under OMNI poly voices keep their input note's channel, and mono --
+whose notes trace back to no one input note -- uses OUT (`Patch::outChannel`). Poly keys held
+notes and voices by (note, channel); mono by note alone. The IN keyboard plays on CH.
+Note-offs go out at gate end, on retrigger, voice removal, structural change, transport
 stop, bypass and `releaseResources`. A melody tie holds a note with no release time; each tick the
 owning chain checks the tie is still valid (generator still melody, next step still a tie) and
 releases it otherwise, so an edit can never strand one.

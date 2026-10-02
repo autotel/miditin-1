@@ -40,10 +40,11 @@ inline constexpr int8_t melTie  = INT8_MAX;
 
 struct Patch
 {
-    bool         run       = true;
     VoiceMode    voiceMode = VoiceMode::mono;
     /** 0 = OMNI; 1..16 = only that channel's notes are played, the rest pass through. */
     int          inChannel = 0;
+    /** Mono + OMNI: the output channel. A set CH outputs on CH; poly keeps each voice's own. */
+    int          outChannel = 1;
 
     EnergySource enSource  = EnergySource::osc;
     Shape        enShape   = Shape::sine;

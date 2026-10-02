@@ -64,3 +64,8 @@ MIDI out, the IN keyboard is a utility.
   chain) discarded every hit of a shaker burst after the first, and every other peg of a whipped
   ANGLE wheel. Simultaneous pulses now each advance the generator, at the same sample. The wheel
   counts every peg crossed in a step (a SLICES edit resyncs instead of firing).
+- **RUN/STOP and the BPM slider removed; CH / OUT took the header** (author). With no button, a
+  saved `run = false` would have been silent for good, so RUN is gone from `Patch` and the engine
+  always runs (the host's bypass stops it). `bpm` stays a host parameter -- the tempo with no host
+  tempo -- just without a control. OUT exists because mono notes trace back to no one input note,
+  so under OMNI there is no input channel to follow.
