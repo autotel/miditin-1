@@ -11,10 +11,6 @@ and one commit per task.
 
 ## Layout, melody, animation (author, 2026-10-02)
 
-- [opus] **Melody note resize.** Present, but its target was the prototype's 6 px x one row with no
-  hint, so it reads as missing. One hit-test (`Shell::melodyHandle`) for click and hover: the
-  right 45 % of a note's last step, a row's slack, resize cursor on hover. Drag right lengthens,
-  left shortens.
 - [sonnet] **GATE + VELOCITY above the OUT keyboard.** Move both rows from under OUT into the right
   half (GENERATE / TRANSFORM columns), between those columns' controls and the IN/OUT band; the
   OUT title and keyboard sit below them. Shorten the GENERATE and TRANSFORM control stacks'

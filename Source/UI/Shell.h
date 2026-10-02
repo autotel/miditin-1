@@ -109,5 +109,7 @@ private:
     void drawBottomText (juce::Graphics&);
 
     juce::String energyZone (juce::Point<float> local) const;
+    /** The melody note whose right-edge handle is under `l` (canvas coords): its first step, or -1. */
+    int melodyHandle (juce::Point<float> l) const;
 };
 } // namespace mdt

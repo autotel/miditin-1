@@ -592,6 +592,25 @@ juce::String Shell::energyZone (juce::Point<float> l) const
     return {};
 }
 
+int Shell::melodyHandle (juce::Point<float> l) const
+{
+    const int len = juce::roundToInt (host.param (P::melLength));
+    const float cw = views::CW / (float) len, rh = (views::CH - 13) / 15;
+    const int col = juce::jlimit (0, len - 1, (int) std::floor (l.x / cw));
+    const float deg = 7.5f - (l.y - 13) / rh;   // continuous row, so a near miss still lands
+    const auto& mel = patch.melody;
+    // A note ending in this step, its handle the right part of it, a row's slack either way: the
+    // prototype's 6 px by one row is a hard target at plugin size.
+    for (int i = col; i >= 0; --i)
+    {
+        if (mel[(size_t) i] == melTie) continue;
+        const bool ends = col + 1 >= len || mel[(size_t) col + 1] != melTie;
+        if (mel[(size_t) i] == melRest || ! ends) return -1;
+        return std::abs (deg - (float) mel[(size_t) i]) <= 1.0f && (float) (col + 1) * cw - l.x < std::max (6.0f, 0.45f * cw) ? i : -1;
+    }
+    return -1;
+}
+
 void Shell::mouseMove (const juce::MouseEvent& e)
 {
     const auto r = canvas (0);
@@ -605,7 +624,8 @@ void Shell::mouseMove (const juce::MouseEvent& e)
         repaint();
     }
     else if (canvas (2).contains (e.position) && patch.gen == GenKind::melody)
-        setMouseCursor (juce::MouseCursor::CrosshairCursor);
+        setMouseCursor (melodyHandle (e.position - canvas (2).getPosition()) >= 0 ? juce::MouseCursor::LeftRightResizeCursor
+                                                                                   : juce::MouseCursor::CrosshairCursor);
     else if (canvas (3).contains (e.position) && patch.tfMode != TransformMode::held)
         setMouseCursor (juce::MouseCursor::PointingHandCursor);
     else if (keyboard (0).contains (e.position))
@@ -663,14 +683,14 @@ void Shell::mouseDown (const juce::MouseEvent& e)
             while (j < len && mel[(size_t) j] == melTie) ++j;
             if (col >= i && col < j) { ns = i; ne = j; }
         }
+        // A note's right-edge handle lengthens or shortens it; anywhere else on it deletes it.
+        if (const int hs = melodyHandle (l); hs >= 0)
+        {
+            drag = { Drag::melResize, 0, 0, 0, 0, hs, col };
+            return;
+        }
         if (ns >= 0 && mel[(size_t) ns] == deg)
         {
-            // Its right-edge handle lengthens it; anywhere else on it deletes it.
-            if (col == ne - 1 && (float) ne * cw - l.x < 6)
-            {
-                drag = { Drag::melResize, 0, 0, 0, 0, ns, col };
-                return;
-            }
             for (int i = ns; i < ne; ++i) mel[(size_t) i] = melRest;
         }
         else
