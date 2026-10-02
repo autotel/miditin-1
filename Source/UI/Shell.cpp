@@ -7,6 +7,7 @@ namespace
 {
     constexpr float pi = juce::MathConstants<float>::pi;
     constexpr int pad = 10, gap = 6, rowH = 12, buttonH = 18, bigButtonH = 24;
+    constexpr float inKeysAlpha = 0.55f;   // the IN keyboard is drawn muted next to OUT
 
     juce::String feedsText (const Patch& p)
     {
@@ -482,7 +483,15 @@ void Shell::paint (juce::Graphics& g)
     {
         juce::Graphics::ScopedSaveState s2 (g);
         g.addTransform (juce::AffineTransform::translation (keyboard (side).getPosition()));
-        side ? views::drawOutKeys (g, f) : views::drawInKeys (g, f);
+        if (side)
+        {
+            views::drawOutKeys (g, f);
+            continue;
+        }
+        // The IN keyboard is a utility; the MIDI out is the product, so OUT keeps the emphasis.
+        g.beginTransparencyLayer (inKeysAlpha);
+        views::drawInKeys (g, f);
+        g.endTransparencyLayer();
     }
 }
 
@@ -515,7 +524,7 @@ void Shell::drawBottomText (juce::Graphics& g)
     for (int i = 0; i < 2; ++i)
     {
         const float x = (float) (i * 450);
-        g.setColour (theme::ink);
+        g.setColour (i ? theme::ink : theme::muted);
         fonts::drawTracked (g, i ? "OUT" : "IN", { x, (float) bottomTop + 12, 450, 13 }, fonts::moduleTitle, juce::Justification::centred);
         g.setColour (theme::muted);
         fonts::drawTracked (g, subs[i], { x, (float) bottomTop + 26, 450, 12 }, fonts::moduleSub, juce::Justification::centred);
@@ -523,7 +532,7 @@ void Shell::drawBottomText (juce::Graphics& g)
 
     g.setColour (theme::muted);
     fonts::drawTracked (g, "HELD", inHeldArea.withWidth (30), fonts::label, juce::Justification::centredLeft);
-    g.setColour (theme::ink);
+    g.setColour (theme::ink.withMultipliedAlpha (inKeysAlpha));
     fonts::drawTracked (g, heldText (*snap), inHeldArea.withTrimmedLeft (38), fonts::label, juce::Justification::centredLeft);
     g.setColour (theme::muted);
     fonts::drawTracked (g, "GATE", juce::Rectangle<float> (450.0f + pad, (float) gate->getY(), 30, rowH), fonts::label, juce::Justification::centredLeft);

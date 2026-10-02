@@ -39,3 +39,4 @@ MIDI out, the IN keyboard is a utility.
   the held notes. The factory presets that relied on the old arp/scale defaults now set them.
 - **SOUND starts off**, Standalone included (it used to start on there): the preview synth is a
   utility; the product is the MIDI out.
+- **IN keyboard muted** (keys at 55 % opacity, title and held list dimmed); OUT keeps the emphasis.
