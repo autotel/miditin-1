@@ -1,5 +1,6 @@
 #include <juce_audio_basics/juce_audio_basics.h>
 #include "Engine/Engine.h"
+#include "Engine/PreviewSynth.h"
 
 using namespace mdt;
 
@@ -216,6 +217,23 @@ struct EngineTests final : juce::UnitTest
             expectEquals ((int) times.size(), 4);
             for (size_t i = 0; i < times.size(); ++i)
                 expectWithinAbsoluteError (times[i], 0.5 * (double) (i + 1), 0.0015);
+        }
+
+        beginTest ("preview synth sounds a note and falls silent after its release");
+        {
+            PreviewSynth ps;
+            ps.prepare (48000);
+            juce::AudioBuffer<float> a (2, 4800);
+            juce::MidiBuffer m;
+            m.addEvent (juce::MidiMessage::noteOn (1, 69, 1.0f), 0);
+            m.addEvent (juce::MidiMessage::noteOff (1, 69), 2400);
+            a.clear();
+            ps.render (m, a);
+            expect (a.getMagnitude (0, 2400) > 0.05f);
+            juce::AudioBuffer<float> tail (2, 48000);
+            tail.clear();
+            ps.render ({}, tail);
+            expect (tail.getMagnitude (24000, 24000) < 1e-4f);
         }
 
         beginTest ("snapshot carries views, held notes and the last mapping");

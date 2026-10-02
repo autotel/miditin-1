@@ -10,7 +10,7 @@ if [ "$1" = "sanitize" ]; then
   # The suppression file covers fontconfig/freetype's process-lifetime globals, which JUCE pulls
   # in the moment anything asks for a font. See .lsan-suppressions.txt before adding to it.
   ASAN_OPTIONS=detect_leaks=1 \
-  LSAN_OPTIONS="suppressions=$(pwd)/.lsan-suppressions.txt:print_suppressions=0" \
+  LSAN_OPTIONS="suppressions='$(pwd)/.lsan-suppressions.txt':print_suppressions=0" \
   UBSAN_OPTIONS=print_stacktrace=1 \
     ./build-asan/MiditinTests_artefacts/Debug/MiditinTests
   exit

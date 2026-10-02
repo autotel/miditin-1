@@ -9,17 +9,6 @@ Source for every phase: `miditin 1 - spec.md` (§ numbers below) and the v2 prot
 Port behaviour from the prototype; do not reinvent it. Each phase ends with `./build.sh test` green
 and one commit per task.
 
-## Phase 6 -- MIDI engine (§2, §7)
-
-- [opus] Processor: `processBlock` drives `mdt::Engine` (copy input MIDI first; output only
-  generated notes), releases on bypass / `releaseResources`, feeds UI events (IN keyboard, release
-  all, kick) through a FIFO. Processor state: `getStateInformation` = APVTS + `Patch::toXml`, round-trip test;
-  `Patch` published through `TripleBuffer`; `UiSnapshot` (per-voice energy, wheel angle, balls,
-  digital playhead, generator step, last tone -> note, pulse events, lit notes) through another.
-- [sonnet] Standalone preview: simple internal synth (§7 "Sound") rendering the output notes to
-  audio, on by default only in the Standalone; MIDI output device selectable in the Standalone's
-  settings. In a DAW the audio output stays silent unless preview is switched on.
-
 ## Phase 7 -- UI (§8)
 
 - [opus] Shell: 900 × 600, header (title, chain caption, play/transport, mono/poly), the five
