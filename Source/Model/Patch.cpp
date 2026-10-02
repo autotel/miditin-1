@@ -22,7 +22,7 @@ namespace
 
     const std::array<const char*, 2> voiceNames  { "mono", "poly" };
     const std::array<const char*, 5> sourceNames { "osc", "vel", "note", "cc", "audio" };
-    const std::array<const char*, 4> shapeNames  { "sine", "tri", "saw", "sh" };
+    const std::array<const char*, 5> shapeNames  { "sine", "tri", "saw", "square", "sh" };
     const std::array<const char*, 3> filterNames { "off", "lpf", "hpf" };
     const std::array<const char*, 3> edgeNames   { "both", "pos", "neg" };
     const std::array<const char*, 4> pulseNames  { "wheel", "shaker", "digital", "midiIn" };

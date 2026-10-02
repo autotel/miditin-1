@@ -68,6 +68,7 @@ struct Lfo
                 l = s.shape == Shape::sine ? 0.5f - 0.5f * (float) std::cos (twoPi * p)
                   : s.shape == Shape::tri  ? (p < 0.5f ? 2 * p : 2 - 2 * p)
                   : s.shape == Shape::saw  ? p
+                  : s.shape == Shape::square ? (p < 0.5f ? 1.0f : 0.0f)
                                            : sh;
                 break;
         }

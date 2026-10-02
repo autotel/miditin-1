@@ -11,9 +11,6 @@ and one commit per task.
 
 ## Energy and velocity (author, 2026-10-02)
 
-- [sonnet] **Square LFO.** `Shape::square` between `saw` and `sh` (state saves names, so order is
-  free): `p < 0.5 ? 1 : 0`. Patch name `"square"`, segmented `SIN TRI SAW SQR S&H`. Test: high
-  for the first half-cycle, low for the second.
 - [opus] **Velocity module** (fills spec §9 "output velocity design"). Three host parameters in the
   registry, 0..1, labels `ENERGY` / `PULSE` / `INPUT`, defaults 0 / 1 / 0 so today's MIDI is
   unchanged. Output velocity = clamp(energy·E + strength·P + inputVel·I, 0..1) → 1..127, where

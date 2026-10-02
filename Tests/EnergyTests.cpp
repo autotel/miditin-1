@@ -25,6 +25,16 @@ struct EnergyTests final : juce::UnitTest
         expectWithinAbsoluteError (hi, 0.8f, 0.01f);
         expectWithinAbsoluteError ((float) l.ph, 0.0f, 0.01f);
 
+        beginTest ("square: high for the first half-cycle, low for the second");
+        {
+            EnergySettings q; q.shape = Shape::square; q.rateHz = 1; q.depth = 1;
+            Lfo lq;
+            lq.step (q, {}, 0.25, 0, 0, rng);
+            expectEquals (lq.val, 1.0f);
+            lq.step (q, {}, 0.5, 0, 0, rng);
+            expectEquals (lq.val, 0.0f);
+        }
+
         beginTest ("sync: phase follows the clock, 1 bar = 4 beats");
         s.sync = true; s.div = 2; s.shape = Shape::saw; s.depth = 1;
         Lfo sy;

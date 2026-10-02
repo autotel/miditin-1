@@ -13,7 +13,7 @@ namespace mdt
 {
 enum class VoiceMode     : uint8_t { mono, poly };
 enum class EnergySource  : uint8_t { osc, vel, note, cc, audio };
-enum class Shape         : uint8_t { sine, tri, saw, sh };
+enum class Shape         : uint8_t { sine, tri, saw, square, sh };
 enum class EnergyFilter  : uint8_t { off, lpf, hpf };
 /** Which edges the energy filter acts on; the other direction passes straight through. */
 enum class EnergyEdge    : uint8_t { both, pos, neg };
