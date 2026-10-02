@@ -56,7 +56,7 @@ struct UiSnapshot
         float  flick = 0;
         int    ballCount = 0;
         std::array<Ball, Shaker::maxBalls> balls {};
-        std::array<WallHit, 8> walls {};
+        std::array<WallHit, 24> walls {};
         float  effort = 0;
         float  boxX = 0, boxY = 0;   // the shaker box's displacement, box widths
         double beat = 0, digT = -9;
@@ -117,11 +117,21 @@ inline void blend (const UiSnapshot& a, const UiSnapshot& b, double t, UiSnapsho
         q.boxY = mix (p.boxY, q.boxY);
         if (std::abs (q.beat - p.beat) < 1)   // not across a relock to the host bar
             q.beat = mix (p.beat, q.beat);
+        // A ball that bounced in between is mirrored across that wall, blended, and folded back,
+        // so it is drawn touching the wall rather than turning short of it.
+        const float R = Shaker::radius, reach = (float) (b.t - a.t);
+        const auto path = [&] (float pa, float pb, float va, float vb) {
+            if (va < 0 && vb > 0 && pb - R < vb * reach) { const float u = mix (pa, 2 * R - pb); return u < R ? 2 * R - u : u; }
+            if (va > 0 && vb < 0 && 1 - R - pb < -vb * reach) { const float u = mix (pa, 2 * (1 - R) - pb); return u > 1 - R ? 2 * (1 - R) - u : u; }
+            return mix (pa, pb);
+        };
         if (p.ballCount == q.ballCount)
             for (int k = 0; k < q.ballCount; ++k)
             {
-                q.balls[(size_t) k].x = mix (p.balls[(size_t) k].x, q.balls[(size_t) k].x);
-                q.balls[(size_t) k].y = mix (p.balls[(size_t) k].y, q.balls[(size_t) k].y);
+                const auto& pb = p.balls[(size_t) k];
+                auto& qb = q.balls[(size_t) k];
+                qb.x = path (pb.x, qb.x, pb.vx, qb.vx);
+                qb.y = path (pb.y, qb.y, pb.vy, qb.vy);
             }
     }
 }

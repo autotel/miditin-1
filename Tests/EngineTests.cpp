@@ -382,6 +382,16 @@ struct EngineTests final : juce::UnitTest
             expectEquals (out.views[0].arpI, 3);
             blend (a, b, 9, out);
             expectEquals (out.t, 2.0);
+            // A bounce off the left wall in between: drawn reaching the wall, never through it.
+            a.views[0].balls[0] = { 0.1f, 0.5f, -2, 0 };
+            b.views[0].balls[0] = { 0.08f, 0.5f, 2, 0 };
+            float lowest = 1;
+            for (double t = 1; t <= 2; t += 0.01)
+            {
+                blend (a, b, t, out);
+                lowest = std::min (lowest, out.views[0].balls[0].x);
+            }
+            expectWithinAbsoluteError (lowest, Shaker::radius, 0.003f);
             b.numViews = 2;   // a voice came or went: no blending across it
             blend (a, b, 1.5, out);
             expectEquals (out.t, 2.0);

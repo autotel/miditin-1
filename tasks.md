@@ -11,10 +11,6 @@ and one commit per task.
 
 ## Pulses (author, 2026-10-02)
 
-- [opus] **Fast shaker misses collisions** (e.g. a 3 Hz square). The prototype's 4 /s speed cap,
-  relative to the box in the box-frame physics, holds balls to a fast-moving box; raise it (40 /s
-  cannot tunnel at 1 kHz), shorten the 60 ms hit cooldown, blend bounces through the wall, trail
-  vertex per bounce, 24-hit flash ring. Test: POSITION 4 Hz square gives > 200 hits in 6 s.
 - [opus] **Let pulses burst.** Drop `minPulseGap` (30 ms per chain: it discarded every hit of a
   shaker burst after the first). The wheel pulses once per peg crossed, not once per tick, so a
   jump over several pegs sends them all. Tests: a wheel jump of 5 pegs in one tick = 5 pulses; two

@@ -69,6 +69,14 @@ struct PulseTests final : juce::UnitTest
         expect (run (full, ShakeMode::shake, 8) != a, "seed");
         expect (run (calm, ShakeMode::shake, 7, 3000).size() < a.size() / 10, "unshaken balls mostly lie still");
 
+        beginTest ("shaker: a fast box slams the balls -- they do not ride along with it");
+        {
+            // POSITION, a 4 Hz square of full travel: the box moves at ~37 widths/s. A speed cap
+            // relative to the box (the prototype's 4 /s) held the balls to it: 4 hits in 6 s.
+            const auto fast = run ([] (double t) { return std::fmod (t, 0.25) < 0.125 ? 1.5f : 0.0f; }, ShakeMode::follow, 7, 0, 6000);
+            expect (fast.size() > 200, juce::String ((int) fast.size()));
+        }
+
         beginTest ("shaker POSITION: a steady curve settles, a square curve jolts at its edges");
         expect (run ([] (double) { return 0.8f; }, ShakeMode::follow, 7, 3000).size() < a.size() / 10, "a box held still lets the balls lie");
         const auto sq = run ([] (double t) { return std::fmod (t, 1.0) < 0.5 ? 1.0f : 0.0f; }, ShakeMode::follow, 7, 2000, 6000);

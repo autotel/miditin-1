@@ -93,7 +93,7 @@ struct Shaker
     std::array<Ball, maxBalls> balls {};
     int count = 0;
     float effort = 0;   // the agitation actually applied, for the readout
-    std::array<WallHit, 8> walls {};   // ring of recent wall hits, for drawing
+    std::array<WallHit, 24> walls {};  // ring of recent wall hits, for drawing (0.4 s of them)
     int wallNext = 0;
     /** The box's displacement and velocity, box widths (and per second). Balls live in the box's
         frame, so they feel gravity and minus its acceleration -- the same push for every ball. */
@@ -157,9 +157,11 @@ struct Shaker
 
         auto hit = [&] (Ball& b, char w, float pos, float sp)
         {
+            if (sp > 0.35f)
+                b.recordTrail();   // a vertex at the wall, so the drawn path bends there
             if (sp > 0.35f && b.cool <= 0)
             {
-                b.cool = 0.06f;
+                b.cool = 0.02f;   // a corner rattle is one hit; a real second bounce is not
                 b.hit = t;
                 walls[(size_t) wallNext] = { w, pos, sp, t };
                 wallNext = (wallNext + 1) % (int) walls.size();
@@ -175,7 +177,9 @@ struct Shaker
             b.vx *= damp;
             b.vy *= damp;
             const float sp = std::hypot (b.vx, b.vy);
-            if (sp > 4) { b.vx *= 4 / sp; b.vy *= 4 / sp; }
+            // A sanity cap only, relative to the box: the prototype's 4 /s held balls to the box in a
+            // fast move, so they rode along instead of being hit. 40 /s still cannot tunnel a wall.
+            if (sp > maxSpeed) { b.vx *= maxSpeed / sp; b.vy *= maxSpeed / sp; }
             b.x += b.vx * (float) dt;
             b.y += b.vy * (float) dt;
             b.cool -= (float) dt;
@@ -220,7 +224,7 @@ struct Shaker
     }
 
     // ponytail: hand-tuned feel constants; knobs if one setting cannot serve every patch.
-    static constexpr float  gravity = 2.6f, shakeAmp = 0.08f, followTravel = 0.5f;
+    static constexpr float  gravity = 2.6f, shakeAmp = 0.08f, followTravel = 0.5f, maxSpeed = 40;
     static constexpr double shakeHz = 4.0, followTau = 0.02, baseTau = 2.0;
 };
 

@@ -55,3 +55,8 @@ MIDI out, the IN keyboard is a utility.
   per-generator ENERGY mode -- wheel SPEED (spin force) / ANGLE (sprung to `SPEED` turns x m, the
   slider reading TURNS; pegs pass only while energy moves; a switch re-bases, no jump), shaker
   STRENGTH / POSITION. Digital has none.
+- **Shaker speed cap 4 → 40 /s, hit cooldown 60 → 20 ms** (author: "fast shaker stops detecting
+  collisions"). The prototype's 4 /s cap is relative to the box in the box-frame physics, so in a
+  fast move the balls rode along with the box and barely met a wall (POSITION, 4 Hz square: 4
+  hits in 6 s, now ~590). The display mirrors a ball across the wall it bounced off between two
+  snapshots, the trail takes a vertex at each bounce, and the flash ring holds 24.
