@@ -53,6 +53,7 @@ struct Run
 void render (juce::AudioPluginInstance& p, Playhead& ph, Run& run, double seconds, int block = 512)
 {
     juce::AudioBuffer<float> audio (2, block);
+    audio.clear();   // the input is read now (AUDIO energy source)
     juce::MidiBuffer midi;
     for (double t = 0; t < seconds; t += block / 48000.0)
     {

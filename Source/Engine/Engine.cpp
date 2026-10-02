@@ -145,6 +145,8 @@ void Engine::process (const Patch& nextPatch, const ParamValues& values, const T
                 sq += audio[ch][audioPos] * audio[ch][audioPos];
             meanSquare += ((audioChannels > 0 ? sq / (float) audioChannels : 0.0f) - meanSquare) * msCoef;
         }
+        if (! std::isfinite (meanSquare))   // one NaN/inf sample from the host would stick forever
+            meanSquare = 0;
         audioLevel = std::clamp ((float) std::sqrt (meanSquare), 0.0f, 1.0f);
     };
 
