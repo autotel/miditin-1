@@ -111,6 +111,7 @@ void Engine::process (const Patch& nextPatch, const ParamValues& values, const T
     energySettings.source = patch.enSource;
     energySettings.shape = patch.enShape;
     energySettings.filter = patch.enFilter;
+    energySettings.edge = patch.enEdge;
     energySettings.sync = patch.enSync;
     energySettings.div = pv.i (P::enDiv);
     energySettings.rateHz = pv[P::enRate];

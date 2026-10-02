@@ -58,6 +58,12 @@ toggles and click targets: kinds, modes, orders, sync/retrig/wrap, scale type, r
 the typed arpeggio, the melody grid, the pitch-class set, the CC number. Choices reshape the chain or
 are routing; automating them mid-note is how notes hang. This keeps the rule one line long.
 
+## Energy additions beyond the spec
+
+- **One-sided filter** (`Patch::enEdge`): the energy smoother snaps instead of smoothing on the
+  unselected edge, so one switch serves both filters — LPF `- ONLY` = instant onset, slow release;
+  HPF `+ ONLY` = only rises register.
+
 ## UI
 
 The editor animates from the latest `UiSnapshot` at its frame rate and keeps its own short

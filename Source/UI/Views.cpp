@@ -294,7 +294,8 @@ void drawEnergy (juce::Graphics& g, const Frame& f)
     juce::String src = p.enSource == EnergySource::osc ? "" : p.enSource == EnergySource::vel ? "in vel"
                      : p.enSource == EnergySource::note ? "in note" : "cc" + juce::String (p.ccNumber);
     if (p.enFilter != EnergyFilter::off)
-        src += p.enFilter == EnergyFilter::lpf ? " lpf" : " hpf";
+        src += juce::String (p.enFilter == EnergyFilter::lpf ? " lpf" : " hpf")
+             + (p.enEdge == EnergyEdge::pos ? "+" : p.enEdge == EnergyEdge::neg ? "-" : "");
     txt (g, src, CW, CH - 2, theme::muted, 8, 400, juce::Justification::right);
 }
 

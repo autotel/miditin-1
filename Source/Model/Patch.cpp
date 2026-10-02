@@ -24,6 +24,7 @@ namespace
     const std::array<const char*, 4> sourceNames { "osc", "vel", "note", "cc" };
     const std::array<const char*, 4> shapeNames  { "sine", "tri", "saw", "sh" };
     const std::array<const char*, 3> filterNames { "off", "lpf", "hpf" };
+    const std::array<const char*, 3> edgeNames   { "both", "pos", "neg" };
     const std::array<const char*, 4> pulseNames  { "wheel", "shaker", "digital", "midiIn" };
     const std::array<const char*, 2> modNames    { "scale", "offset" };
     const std::array<const char*, 3> genNames    { "arp", "input", "melody" };
@@ -83,6 +84,7 @@ juce::XmlElement Patch::toXml() const
     x.setAttribute ("enSync", enSync);
     x.setAttribute ("enRetrig", enRetrig);
     putEnum (x, "enFilter", enFilter, filterNames);
+    putEnum (x, "enEdge", enEdge, edgeNames);
     x.setAttribute ("ccNumber", ccNumber);
     putEnum (x, "pulse", pulse, pulseNames);
     putEnum (x, "wheelMod", modMode[0], modNames);
@@ -123,6 +125,7 @@ Patch Patch::fromXml (const juce::XmlElement& x)
     p.enSync = x.getBoolAttribute ("enSync", p.enSync);
     p.enRetrig = x.getBoolAttribute ("enRetrig", p.enRetrig);
     getEnum (x, "enFilter", p.enFilter, filterNames);
+    getEnum (x, "enEdge", p.enEdge, edgeNames);
     p.ccNumber = juce::jlimit (0, 119, x.getIntAttribute ("ccNumber", p.ccNumber));
     getEnum (x, "pulse", p.pulse, pulseNames);
     getEnum (x, "wheelMod", p.modMode[0], modNames);

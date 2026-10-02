@@ -70,6 +70,7 @@ private:
     BoxButton syncBtn { "SYNC" }, retrigBtn { "RETRIG" };
     std::unique_ptr<RangeRow> ccNumber, enAmount;
     Segmented enFilter { { "OFF", "LPF", "HPF" }, 3 };
+    Segmented enEdge { { "BOTH", "+ ONLY", "- ONLY" }, 3, fonts::buttonSmall };
     // pulse
     Segmented pulseKind { { "WHEEL", "SHAKER", "DIGITAL", "MIDI IN" }, 2 };
     std::unique_ptr<RangeRow> slices, speed, agitate, balls, bounce, digDiv, swing;

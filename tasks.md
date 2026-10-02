@@ -14,21 +14,6 @@ and one commit per task.
 Neither is in the spec or the prototype: the filed bullets in `change-requirements.md`'s history
 are the source. Record each in `wiki/architecture.md` in a line or two once it lands.
 
-- [sonnet] **One-sided energy filter: BOTH / + ONLY / - ONLY.** New `enum class EnergyEdge :
-  uint8_t { both, pos, neg }` in `Patch.h`, field `Patch::enEdge = both` (structural, a choice,
-  not a host param), saved by `Document`/`Patch.cpp` like `enFilter` (`edgeNames` "both", "pos",
-  "neg"), carried into `EnergySettings::edge` in `Engine::process`. One mechanism serves both
-  filters: the smoother `lp` in `Lfo::step` (`Energy.h`) only smooths in the chosen direction and
-  **snaps** (`lp = l`) in the other — `pos`: smooth while `l > lp`, snap when `l < lp`; `neg`:
-  smooth while `l < lp`, snap when `l > lp`. So LPF `neg` = instant onset, slow release (the
-  author's example); HPF `pos` = only rising edges register (`l - lp >= 0`), HPF `neg` = only
-  falling. Nothing else in the filter changes. UI (`Shell.cpp`): a second `Segmented` under FILTER,
-  `{ "BOTH", "+ ONLY", "- ONLY" }`, shown only when the filter is not off; `Views.cpp` appends
-  `+`/`-` to the " lpf"/" hpf" source tag when one-sided. Tests (`EnergyTests.cpp`): LPF `neg` on
-  a 0→1 CC step reaches 1 on the next tick and decays slowly on 1→0; LPF `pos` the mirror; HPF `pos`
-  never drops below 0.5 on a falling step, HPF `neg` never rises above it. `ModelTests` round-trips
-  `enEdge`. A snapshot with LPF + `- ONLY` checked in `MiditinSnap`.
-
 - [opus] **AUDIO energy source: input RMS used directly as the energy level.** Add
   `EnergySource::audio` (last in the enum; `sourceNames` gets "audio"). Signal path:
   - *Processor*: an optional stereo **input** bus (`withInput ("Input", stereo, true)`);

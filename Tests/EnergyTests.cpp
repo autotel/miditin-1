@@ -61,6 +61,34 @@ struct EnergyTests final : juce::UnitTest
             lh.step (f, { 0, 0, 1 }, dt, 0, 0, rng);
         expectWithinAbsoluteError (lh.val, 0.5f, 0.01f);
 
+        beginTest ("one-sided: the filter acts on one edge, the other passes straight through");
+        EnergySettings e; e.source = EnergySource::cc; e.filter = EnergyFilter::lpf; e.depth = 1; e.filterAmt = 0.5f;
+        auto run = [&] (Lfo& x, float target, int ticks) { for (int i = 0; i < ticks; ++i) x.step (e, { 0, 0, target }, dt, 0, 0, rng); };
+        e.edge = EnergyEdge::neg;   // instant onset, slow release
+        Lfo ln; ln.lp = 0;
+        run (ln, 1, 1);
+        expectWithinAbsoluteError (ln.val, 1.0f, 1e-6f);
+        run (ln, 0, 100);
+        expect (ln.val > 0.8f);
+        e.edge = EnergyEdge::pos;   // the mirror
+        Lfo lpo; lpo.lp = 1;
+        run (lpo, 0, 1);
+        expectWithinAbsoluteError (lpo.val, 0.0f, 1e-6f);
+        run (lpo, 1, 100);
+        expect (lpo.val < 0.2f);
+        e.filter = EnergyFilter::hpf;   // pos: only rises register
+        Lfo hp; hp.lp = 1;
+        float lowest = 1;
+        for (float target : { 0.0f, 1.0f, 0.0f })
+            for (int i = 0; i < 500; ++i) { hp.step (e, { 0, 0, target }, dt, 0, 0, rng); lowest = std::min (lowest, hp.val); }
+        expect (lowest >= 0.5f);
+        e.edge = EnergyEdge::neg;      // neg: only falls register
+        Lfo hn; hn.lp = 0;
+        float highest = 0;
+        for (float target : { 1.0f, 0.0f, 1.0f })
+            for (int i = 0; i < 500; ++i) { hn.step (e, { 0, 0, target }, dt, 0, 0, rng); highest = std::max (highest, hn.val); }
+        expect (highest <= 0.5f);
+
         beginTest ("sample & hold changes only at a cycle wrap");
         EnergySettings h; h.shape = Shape::sh; h.rateHz = 2; h.depth = 1;
         Lfo lsh;

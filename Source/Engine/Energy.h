@@ -17,6 +17,7 @@ struct EnergySettings
     EnergySource source = EnergySource::osc;
     Shape        shape  = Shape::sine;
     EnergyFilter filter = EnergyFilter::off;
+    EnergyEdge   edge   = EnergyEdge::both;
     bool   sync   = false;
     int    div    = 2;
     float  rateHz = 0.12f;
@@ -69,9 +70,14 @@ struct Lfo
                 break;
         }
 
-        // INERTIA / WINDOW: one time constant, 20 ms .. 3.02 s, shared by both filters.
+        // INERTIA / WINDOW: one time constant, 20 ms .. 3.02 s, shared by both filters. One-sided,
+        // the smoother snaps on the other edge: LPF `neg` = instant onset, slow release; HPF `pos`
+        // sees only rises.
         const double tau = 0.02 + (double) (s.filterAmt * s.filterAmt) * 3.0;
-        lp += (l - lp) * (float) (1.0 - std::exp (-dt / tau));
+        if ((s.edge == EnergyEdge::pos && l < lp) || (s.edge == EnergyEdge::neg && l > lp))
+            lp = l;
+        else
+            lp += (l - lp) * (float) (1.0 - std::exp (-dt / tau));
         const float v = s.filter == EnergyFilter::lpf ? lp
                       : s.filter == EnergyFilter::hpf ? std::clamp (0.5f + (l - lp) * 2.5f, 0.0f, 1.0f)
                                                       : l;

@@ -58,7 +58,7 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
     bpm->valueLeft = true;
 
     // energy
-    for (juce::Component* c : std::initializer_list<juce::Component*> { &enSource, &enShape, &syncBtn, &retrigBtn, &enFilter }) add (*c);
+    for (juce::Component* c : std::initializer_list<juce::Component*> { &enSource, &enShape, &syncBtn, &retrigBtn, &enFilter, &enEdge }) add (*c);
     enSource.onChange = [this] (int i) { edit ([i] (Patch& p) { p.enSource = (EnergySource) i; }); };
     enShape.padY = 3;
     enShape.onChange = [this] (int i) { edit ([i] (Patch& p) { p.enShape = (Shape) i; }); };
@@ -66,6 +66,8 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
     retrigBtn.onClick = [this] { edit ([] (Patch& p) { p.enRetrig = ! p.enRetrig; }); };
     enFilter.padY = 3;
     enFilter.onChange = [this] (int i) { edit ([i] (Patch& p) { p.enFilter = (EnergyFilter) i; }); };
+    enEdge.padY = 3;
+    enEdge.onChange = [this] (int i) { edit ([i] (Patch& p) { p.enEdge = (EnergyEdge) i; }); };
     ccNumber = std::make_unique<RangeRow> ("CC #", 0.0f, 119.0f, 1.0f,
         [this] { return (float) patch.ccNumber; },
         [this] (float v) { edit ([v] (Patch& p) { p.ccNumber = (int) v; }); },
@@ -199,6 +201,7 @@ void Shell::syncControls()
     retrigBtn.setText (p.enRetrig ? "RETRIG ON" : "RETRIG OFF");
     retrigBtn.setOn (p.enRetrig);
     enFilter.setSelected ((int) p.enFilter);
+    enEdge.setSelected ((int) p.enEdge);
     enAmount->setLabel (p.enFilter == EnergyFilter::hpf ? "WINDOW" : "INERTIA");
 
     pulseKind.setSelected ((int) p.pulse);
@@ -277,6 +280,9 @@ void Shell::layoutControls()
         if (cc)
             ccNumber->setBounds (st.next (rowH));
         labelled (st, "FILTER", enFilter, Segmented::heightFor (1, 3));
+        show (enEdge, p.enFilter != EnergyFilter::off);
+        if (p.enFilter != EnergyFilter::off)
+            enEdge.setBounds (st.next (Segmented::heightFor (1, 3)));
         enAmount->setBounds (st.next (rowH));
     }
 

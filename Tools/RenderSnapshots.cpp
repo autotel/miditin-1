@@ -122,6 +122,7 @@ int main (int argc, char** argv)
         h.p.voiceMode = VoiceMode::poly;
         h.p.gen = GenKind::melody;
         h.p.enFilter = EnergyFilter::lpf;
+        h.p.enEdge = EnergyEdge::neg;
     }, { 57, 64 });
     render (dir, "digital-input-set", [] (FakeHost& h) {
         h.p.pulse = PulseKind::digital;
