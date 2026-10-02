@@ -63,7 +63,7 @@ struct Patch
     uint16_t     pcs       = (1 << 0) | (1 << 3) | (1 << 5) | (1 << 7) | (1 << 10);
     bool         wrap      = true;
 
-    /** The internal preview synth (§7 Sound). The Standalone turns it on at startup. */
+    /** The internal preview synth (§7 Sound). Off at startup: the product is the MIDI out. */
     bool         preview   = false;
 
     bool operator== (const Patch&) const = default;

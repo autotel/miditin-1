@@ -37,3 +37,5 @@ MIDI out, the IN keyboard is a utility.
   position, merged with the generated notes; input notes are consumed. Bypass still outputs nothing.
 - **Defaults are input-driven**: `gen = input`, `tfMode = held` -- the wheel paces an arpeggio of
   the held notes. The factory presets that relied on the old arp/scale defaults now set them.
+- **SOUND starts off**, Standalone included (it used to start on there): the preview synth is a
+  utility; the product is the MIDI out.

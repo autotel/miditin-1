@@ -14,8 +14,6 @@ and one commit per task.
 miditin 1 takes what comes in as MIDI; sending MIDI out is its main function; the IN keyboard is a
 utility. Deviates from the prototype (a self-playing page) -- record each in `wiki/history.md`.
 
-- [sonnet] **Standalone starts SOUND OFF.** Drop `p.preview = wrapperType == wrapperType_Standalone`;
-  SOUND stays a toggle, still remembered in state.
 - [opus] **IN keyboard secondary.** Muted relative to OUT: dimmer keys and label, OUT keeps the
   palette's emphasis. Notes from the DAW/controller still light it. Check with `MiditinSnap`.
 - [sonnet] **Host check feeds MIDI in.** With defaults: nothing out while nothing held; a held

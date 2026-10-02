@@ -37,10 +37,7 @@ MiditinProcessor::MiditinProcessor()
     for (auto* prm : getParameters())
         prm->addListener (this);
 
-    // The preview synth is the Standalone's only voice; in a DAW the MIDI goes to a real one.
-    Patch p;
-    p.preview = wrapperType == wrapperType_Standalone;
-    setPatch (p);
+    setPatch ({});
     markClean();
 }
 
@@ -169,7 +166,7 @@ void MiditinProcessor::applyDocument (const juce::ValueTree& doc)
     Patch p;
     ParamValues pv;
     readDocument (doc, p, pv);
-    // The Standalone's preview is a property of where it runs, not of the sound.
+    // The preview is a property of where the plugin runs, not of the sound.
     p.preview = patch.preview;
     for (int i = 0; i < numParams; ++i)
         if (auto* prm = apvts.getParameter (params()[(size_t) i].id))
