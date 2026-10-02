@@ -38,9 +38,9 @@ namespace
 
 juce::Font get (Family family, int weight, float heightPx)
 {
-    // CSS `font-size` is the em size; JUCE's height is ascent + descent. Plex's is ~1.3 em.
-    auto f = juce::Font (juce::FontOptions (typefaceFor (family, weight)));
-    return f.withHeight (heightPx * f.getHeight() / f.getHeightInPoints());
+    // CSS `font-size` is the em size, which JUCE calls the point height (its plain height is
+    // ascent + descent, ~1.3 em for Plex).
+    return juce::Font (juce::FontOptions (typefaceFor (family, weight)).withPointHeight (heightPx));
 }
 
 float trackedWidth (const juce::String& s, const Role& r)

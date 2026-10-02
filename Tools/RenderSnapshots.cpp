@@ -1,0 +1,104 @@
+#include <juce_gui_basics/juce_gui_basics.h>
+#include <iostream>
+#include "UI/Shell.h"
+
+/** Renders the editor to PNGs with no window: a headless engine runs a few seconds of a scene,
+    then the shell paints its latest snapshot into an image. The dev machine is a Wayland session
+    and an agent must never open a window on the user's display.
+
+        ./build/MiditinSnap_artefacts/RelWithDebInfo/MiditinSnap <output-dir>
+
+    Compare against the prototype (`Miditin 1 plugin design/miditin 1 v2.dc.html`). */
+namespace
+{
+using namespace mdt;
+
+struct FakeHost final : Host
+{
+    Engine engine;
+    Patch p;
+    ParamValues pv = ParamValues::defaults();
+    UiSnapshot snap;
+    uint32_t version = 0;
+    std::vector<int> pressed;
+
+    FakeHost() { engine.prepare (48000); }
+
+    const Patch& patch() const override { return p; }
+    void setPatch (const Patch& x) override { p = x; ++version; }
+    uint32_t patchVersion() const override { return version; }
+    float param (P k) const override { return pv[k]; }
+    void setParam (P k, float v) override { pv[k] = v; }
+    const UiSnapshot& snapshot() override { return snap; }
+    void noteOn (int n, float) override { pressed.push_back (n); }
+    void noteOff (int) override {}
+    void releaseHeld() override {}
+    void kick() override {}
+
+    /** Runs the engine, stopping `frames` times to let the shell take a frame (energy history). */
+    void run (double seconds, Shell& shell, std::vector<int> notes = {})
+    {
+        juce::MidiBuffer in, out;
+        for (int n : notes) in.addEvent (juce::MidiMessage::noteOn (1, n, (juce::uint8) 100), 0);
+        const int block = 800;   // 60 frames a second at 48 kHz
+        for (double t = 0; t < seconds; t += block / 48000.0)
+        {
+            out.clear();
+            engine.process (p, pv, {}, in, out, block);
+            in.clear();
+            engine.fillSnapshot (snap);
+            shell.advanceFrame();
+        }
+    }
+};
+
+void render (const juce::File& dir, const juce::String& name, const std::function<void (FakeHost&)>& setup,
+             std::vector<int> notes = {}, double seconds = 4)
+{
+    FakeHost host;
+    setup (host);
+    Shell shell (host);
+    host.run (seconds, shell, notes);
+    const int scale = 2;
+    juce::Image img (juce::Image::ARGB, Shell::width * scale, Shell::height * scale, true);
+    {
+        juce::Graphics g (img);
+        g.addTransform (juce::AffineTransform::scale ((float) scale));
+        shell.paintEntireComponent (g, true);
+    }
+    juce::FileOutputStream os (dir.getChildFile (name + ".png"));
+    os.setPosition (0);
+    os.truncate();
+    juce::PNGImageFormat().writeImageToStream (img, os);
+    std::cout << dir.getChildFile (name + ".png").getFullPathName() << "\n";
+}
+} // namespace
+
+int main (int argc, char** argv)
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    const juce::File dir (argc > 1 ? juce::String (argv[1]) : juce::File::getCurrentWorkingDirectory().getFullPathName());
+    dir.createDirectory();
+
+    render (dir, "default", [] (FakeHost&) {});
+    render (dir, "shaker-poly-melody", [] (FakeHost& h) {
+        h.p.pulse = PulseKind::shaker;
+        h.p.voiceMode = VoiceMode::poly;
+        h.p.gen = GenKind::melody;
+        h.p.enFilter = EnergyFilter::lpf;
+    }, { 57, 64 });
+    render (dir, "digital-input-set", [] (FakeHost& h) {
+        h.p.pulse = PulseKind::digital;
+        h.p.gen = GenKind::input;
+        h.p.tfMode = TransformMode::set;
+        h.p.enSync = true;
+        h.pv[P::tfOctave] = 4.25f;
+    }, { 60, 64, 67 });
+    render (dir, "midiin-held-nowrap", [] (FakeHost& h) {
+        h.p.pulse = PulseKind::midiIn;
+        h.p.tfMode = TransformMode::held;
+        h.p.wrap = false;
+        h.p.enSource = EnergySource::cc;
+    }, { 48, 55, 62 });
+    return 0;
+}

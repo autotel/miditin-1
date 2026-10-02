@@ -40,7 +40,10 @@ set(MDT_CORE_SOURCES
 
 # Drawing code the plugin and the snapshot tool share.
 set(MDT_UI_SOURCES
-    Source/UI/Fonts.cpp)
+    Source/UI/Fonts.cpp
+    Source/UI/Controls.cpp
+    Source/UI/Views.cpp
+    Source/UI/Shell.cpp)
 
 set(MDT_DEFINITIONS
     JUCE_WEB_BROWSER=0
@@ -81,6 +84,25 @@ target_link_libraries(MiditinTests
     PRIVATE
         juce::juce_audio_basics
         juce::juce_events
+    PUBLIC
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags)
+
+# -- Offscreen UI snapshots ----------------------------------------------------
+# Renders the editor to PNGs with no window and no host: the dev machine is a Wayland session, and
+# an agent must never open a window on the user's display.
+juce_add_console_app(MiditinSnap PRODUCT_NAME "MiditinSnap")
+target_sources(MiditinSnap PRIVATE
+    ${MDT_CORE_SOURCES}
+    ${MDT_UI_SOURCES}
+    Tools/RenderSnapshots.cpp)
+target_compile_definitions(MiditinSnap PRIVATE ${MDT_DEFINITIONS})
+target_include_directories(MiditinSnap PRIVATE Source)
+target_link_libraries(MiditinSnap
+    PRIVATE
+        MiditinData
+        juce::juce_gui_basics
+        juce::juce_audio_basics
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
