@@ -97,7 +97,7 @@ private:
     std::vector<std::pair<juce::String, juce::Rectangle<float>>> sideLabels;
     juce::Rectangle<float> heldTextArea, inHeldArea, logArea;
 
-    void timerCallback() override { advanceFrame(); repaint(); }
+    void timerCallback() override;
     void edit (const std::function<void (Patch&)>&);
     void syncControls();
     void layoutControls();

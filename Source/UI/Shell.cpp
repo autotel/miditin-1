@@ -137,6 +137,18 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
 
 Shell::~Shell() { stopTimer(); }
 
+void Shell::timerCallback()
+{
+    advanceFrame();
+    if (presetPanel != nullptr && presetPanel->isVisible())
+        return;
+    // Only what animates: the canvas band (cables included), the transform's held-notes line, and
+    // the keyboards with their text rows. A full 900 x 600 repaint at 60 Hz is wasted CPU in a DAW.
+    repaint (0, gridTop + 40, width, (int) views::CH + 20);
+    repaint (heldTextArea.getSmallestIntegerContainer());
+    repaint (0, bottomTop, width, height - bottomTop);
+}
+
 void Shell::setPresetPanel (juce::Component* panel)
 {
     presetPanel = panel;
