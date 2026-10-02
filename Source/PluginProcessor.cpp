@@ -180,6 +180,7 @@ void MiditinProcessor::getStateInformation (juce::MemoryBlock& dest)
     root.setProperty ("openPresetKey", openPresetKey, nullptr);
     root.setProperty ("openPresetName", openPresetName, nullptr);
     root.setProperty ("preview", patch.preview, nullptr);
+    root.setProperty ("editorWidth", editorWidth, nullptr);
     if (const auto xml = root.createXml())
         copyXmlToBinary (*xml, dest);
 }
@@ -196,6 +197,7 @@ void MiditinProcessor::setStateInformation (const void* data, int size)
     setPatch (p);
     openPresetKey = root["openPresetKey"].toString();
     openPresetName = root["openPresetName"].toString();
+    editorWidth = juce::jlimit (675, 2250, (int) root.getProperty ("editorWidth", 900));
     markClean();
 }
 

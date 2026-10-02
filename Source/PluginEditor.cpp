@@ -66,7 +66,20 @@ MiditinEditor::MiditinEditor (MiditinProcessor& p)
     // the first child that wants it, and a button eats the keystrokes.
     setWantsKeyboardFocus (true);
     addAndMakeVisible (shell);
-    setSize (mdt::Shell::width, mdt::Shell::height);
+
+    // Fixed 3:2, 75 %..250 %. After the shell, so the corner resizer sits on top of it.
+    setResizeLimits (675, 450, 2250, 1500);
+    getConstrainer()->setFixedAspectRatio ((double) mdt::Shell::width / mdt::Shell::height);
+    setResizable (true, true);
+    setSize (proc.editorWidth, proc.editorWidth * mdt::Shell::height / mdt::Shell::width);
+}
+
+void MiditinEditor::resized()
+{
+    // The layout is always built at 900 x 600; one transform carries it to the window.
+    shell.setTransform (juce::AffineTransform::scale ((float) getWidth() / mdt::Shell::width));
+    shell.setBounds (0, 0, mdt::Shell::width, mdt::Shell::height);
+    proc.editorWidth = getWidth();
 }
 
 void MiditinEditor::applyDocument (const juce::ValueTree& doc)

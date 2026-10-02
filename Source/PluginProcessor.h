@@ -54,6 +54,8 @@ public:
     /** Which preset is open, for the librarian: its key and name. Kept here and in the saved state
         because the editor -- and the panel in it -- is destroyed whenever the window closes. */
     juce::String openPresetKey, openPresetName;
+    /** The editor's width, for the same reason; the height follows at 3:2. */
+    int editorWidth = 900;
     /** Any edit since the last load or save. A flag, because the librarian polls it. */
     bool hasUnsavedChanges() const noexcept { return dirty.load(); }
     void markClean() noexcept { dirty = false; }
