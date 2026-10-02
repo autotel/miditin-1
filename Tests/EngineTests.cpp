@@ -6,7 +6,7 @@ using namespace mdt;
 
 namespace
 {
-struct Event { double time; int note; int vel; };   // vel 0 = note-off
+struct Event { double time; int note; int vel; int ch = 1; };   // vel 0 = note-off
 
 /** Drives an engine like a host would: fixed blocks, input scheduled by time. */
 struct Rig
@@ -28,8 +28,8 @@ struct Rig
     }
 
     void at (double time, juce::MidiMessage m) { pending.push_back ({ time, m }); }
-    void noteOn (double time, int n, int v = 100) { at (time, juce::MidiMessage::noteOn (1, n, (juce::uint8) v)); }
-    void noteOff (double time, int n) { at (time, juce::MidiMessage::noteOff (1, n)); }
+    void noteOn (double time, int n, int v = 100, int ch = 1) { at (time, juce::MidiMessage::noteOn (ch, n, (juce::uint8) v)); }
+    void noteOff (double time, int n, int ch = 1) { at (time, juce::MidiMessage::noteOff (ch, n)); }
 
     void run (double seconds)
     {
@@ -47,7 +47,7 @@ struct Rig
             for (const auto md : o)
             {
                 const auto m = md.getMessage();
-                out.push_back ({ now + md.samplePosition / sr, m.getNoteNumber(), m.isNoteOn() ? m.getVelocity() : 0 });
+                out.push_back ({ now + md.samplePosition / sr, m.getNoteNumber(), m.isNoteOn() ? m.getVelocity() : 0, m.getChannel() });
             }
             now += block / sr;
             if (tr.playing) tr.ppq += block / sr * tr.bpm / 60.0;
@@ -429,6 +429,60 @@ struct EngineTests final : juce::UnitTest
                     r.e.fillSnapshot (s);
                     expectWithinAbsoluteError (s.views[0].energyRaw, phase, 0.02f);
                 }
+
+        beginTest ("CH: OMNI poly keeps each voice's channel; a set channel plays only its own");
+        {
+            Rig r;
+            r.patch.voiceMode = VoiceMode::poly;
+            r.noteOn (0.0, 60, 100, 3); r.noteOn (0.0, 67, 100, 5);
+            r.noteOff (2.0, 60, 3); r.noteOff (2.0, 67, 5);
+            r.run (3.0);
+            expect (r.ons() > 0 && r.balanced());
+            std::array<int, 128> ch {};
+            bool consistent = true;
+            for (auto& ev : r.out)
+            {
+                if (ev.vel > 0) ch[(size_t) ev.note] = ev.ch;
+                else consistent = consistent && ev.ch == ch[(size_t) ev.note];   // off on its on's channel
+            }
+            expect (consistent);
+            expect (std::all_of (r.out.begin(), r.out.end(), [] (auto& ev) { return ev.ch == 3 || ev.ch == 5; }));
+            expect (std::any_of (r.out.begin(), r.out.end(), [] (auto& ev) { return ev.ch == 3; }));
+            expect (std::any_of (r.out.begin(), r.out.end(), [] (auto& ev) { return ev.ch == 5; }));
+        }
+        for (auto mode : { VoiceMode::mono, VoiceMode::poly })
+        {
+            Rig r;
+            r.patch.voiceMode = mode;
+            r.patch.inChannel = 2;
+            r.noteOn (0.0, 40, 90, 1);    // another channel: straight through
+            r.noteOn (0.0, 60, 100, 2);
+            r.noteOn (0.0, 64, 100, 2);
+            r.noteOff (1.0, 40, 1);
+            r.run (1.5);
+            int passed = 0;
+            for (auto& ev : r.out)
+                if (ev.note == 40) { expectEquals (ev.ch, 1); ++passed; }
+                else expectEquals (ev.ch, 2);
+            expectEquals (passed, 2);
+            expect (r.ons() > 1);
+        }
+
+        beginTest ("CH: changing channel with notes held releases everything");
+        {
+            Rig r;
+            r.patch.voiceMode = VoiceMode::poly;
+            r.patch.pulse = PulseKind::digital;
+            r.noteOn (0.0, 60);
+            r.run (1.0);
+            r.patch.inChannel = 4;
+            r.run (0.01);
+            expectEquals (r.e.sounding(), 0);
+            expectEquals (r.e.heldCount(), 0);
+            r.noteOff (1.02, 60);   // now another channel's: passes through
+            r.run (1.0);
+            expectEquals (r.e.sounding(), 0);
+        }
 
         beginTest ("audio source: input RMS is the energy, mono or stereo");
         for (int channels : { 1, 2 })

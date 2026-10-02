@@ -42,6 +42,8 @@ struct Patch
 {
     bool         run       = true;
     VoiceMode    voiceMode = VoiceMode::mono;
+    /** 0 = OMNI; 1..16 = only that channel's notes are played, the rest pass through. */
+    int          inChannel = 0;
 
     EnergySource enSource  = EnergySource::osc;
     Shape        enShape   = Shape::sine;

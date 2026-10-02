@@ -81,6 +81,7 @@ juce::XmlElement Patch::toXml() const
     juce::XmlElement x ("Patch");
     x.setAttribute ("run", run);
     putEnum (x, "voiceMode", voiceMode, voiceNames);
+    x.setAttribute ("inChannel", inChannel);
     putEnum (x, "enSource", enSource, sourceNames);
     putEnum (x, "enShape", enShape, shapeNames);
     x.setAttribute ("enSync", enSync);
@@ -123,6 +124,7 @@ Patch Patch::fromXml (const juce::XmlElement& x)
     Patch p;
     p.run = x.getBoolAttribute ("run", p.run);
     getEnum (x, "voiceMode", p.voiceMode, voiceNames);
+    p.inChannel = juce::jlimit (0, 16, x.getIntAttribute ("inChannel", p.inChannel));
     getEnum (x, "enSource", p.enSource, sourceNames);
     getEnum (x, "enShape", p.enShape, shapeNames);
     p.enSync = x.getBoolAttribute ("enSync", p.enSync);

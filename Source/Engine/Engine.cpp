@@ -4,7 +4,6 @@ namespace mdt
 {
 namespace
 {
-    constexpr int outChannel = 1;
     constexpr float noteToEnergy (int n) { return std::clamp ((float) (n - 36) / 48.0f, 0.0f, 1.0f); }
 }
 
@@ -79,7 +78,14 @@ void Engine::applyPatch (const Patch& next, juce::MidiBuffer& out)
             v.active = false;
         if (poly())
             for (int i = 0; i < numHeld; ++i)
-                claimVoice (held[(size_t) i], out, 0);
+                claimVoice (held[(size_t) i], heldCh[(size_t) i], out, 0);
+    }
+
+    // The old channel's note-offs would now pass through: let go of everything first.
+    if (old.inChannel != next.inChannel)
+    {
+        releaseHeld (out, 0);
+        releaseAll (out, 0);
     }
 
     if (old.gen != next.gen || old.order != next.order || old.pulse != next.pulse)
@@ -177,12 +183,17 @@ void Engine::process (const Patch& nextPatch, const ParamValues& values, const T
 
 void Engine::handle (const juce::MidiMessage& m, juce::MidiBuffer& out, int pos)
 {
-    // Notes are consumed; everything else (CCs, bend, pressure, programs, sysex) passes through.
-    if (! m.isNoteOnOrOff())
+    // Notes are consumed; everything else (CCs, bend, pressure, programs, sysex) passes through,
+    // and so does all of another channel than CH. System messages have none (channel 0).
+    const int ch = m.getChannel();
+    const bool ours = patch.inChannel == 0 || ch == 0 || ch == patch.inChannel;
+    if (! m.isNoteOnOrOff() || ! ours)
         out.addEvent (m, pos);
+    if (! ours)
+        return;
 
     if (m.isNoteOn())
-        inputNoteOn (m.getNoteNumber(), m.getFloatVelocity(), out, pos);
+        inputNoteOn (m.getNoteNumber(), m.getFloatVelocity(), ch, out, pos);
     else if (m.isNoteOff())
         inputNoteOff (m.getNoteNumber(), out, pos);
     else if (m.isAllNotesOff() || m.isAllSoundOff())
@@ -200,14 +211,17 @@ void Engine::handle (const juce::MidiMessage& m, juce::MidiBuffer& out, int pos)
     }
 }
 
-void Engine::inputNoteOn (int n, float vel, juce::MidiBuffer& out, int pos)
+void Engine::inputNoteOn (int n, float vel, int ch, juce::MidiBuffer& out, int pos)
 {
     global.in.vel = vel;
+    // ponytail: held notes are keyed by number -- the same note on two channels is one, first
+    // press wins; per-channel keys if OMNI poly ever needs both.
     if (std::find (held.begin(), held.begin() + numHeld, n) != held.begin() + numHeld)
         return;
     if (numHeld < (int) held.size())
     {
         heldVel[(size_t) numHeld] = vel;
+        heldCh[(size_t) numHeld] = ch;
         held[(size_t) numHeld++] = n;
     }
     rebuild();
@@ -222,7 +236,7 @@ void Engine::inputNoteOn (int n, float vel, juce::MidiBuffer& out, int pos)
 
     Chain* target = &global;
     if (poly())
-        target = &claimVoice (n, out, pos);
+        target = &claimVoice (n, ch, out, pos);
     else if (patch.runMode == RunMode::resetOnIn)
         global.gen.reset();
     if (patch.runMode == RunMode::resetOnIn)
@@ -241,6 +255,7 @@ void Engine::inputNoteOff (int n, juce::MidiBuffer& out, int pos)
         if (held[(size_t) i] != n)
         {
             heldVel[(size_t) kept] = heldVel[(size_t) i];
+            heldCh[(size_t) kept] = heldCh[(size_t) i];
             held[(size_t) kept++] = held[(size_t) i];
         }
     numHeld = kept;
@@ -257,7 +272,7 @@ void Engine::releaseHeld (juce::MidiBuffer& out, int pos)
     rebuild();
 }
 
-Chain& Engine::claimVoice (int n, juce::MidiBuffer& out, int pos)
+Chain& Engine::claimVoice (int n, int ch, juce::MidiBuffer& out, int pos)
 {
     dropVoice (n, out, pos);
     Chain* slot = nullptr;
@@ -274,6 +289,7 @@ Chain& Engine::claimVoice (int n, juce::MidiBuffer& out, int pos)
     v = Chain();
     v.active = true;
     v.note = n;
+    v.ch = ch;
     v.age = ++ageCounter;
     v.rng = Rng (seeder.next());
     v.in = { global.in.vel, noteToEnergy (n), 0.5f };
@@ -457,20 +473,21 @@ void Engine::pulse (Chain& c, float strength, juce::MidiBuffer& out, int pos)
     // the voice's own note; mono: the latest still held (in.vel drops on any note-off).
     const float inVel = poly() ? c.in.vel : heldVel[(size_t) numHeld - 1];
     const float level = c.energy * pv[P::velEnergy] + strength * pv[P::velPulse] + inVel * pv[P::velInput];
-    noteOn (*m, level, step.value, out, pos);
+    // Out on CH; under OMNI, poly keeps each voice's channel and mono uses channel 1.
+    noteOn (*m, poly() ? c.ch : std::max (1, patch.inChannel), level, step.value, out, pos);
     if (patch.gen == GenKind::melody && c.gen.nextIsTie (patch, melLen))
         notes[(size_t) *m].until = holdForever;
 }
 
 // -- output ----------------------------------------------------------------------------------------
 
-void Engine::noteOn (int m, float level, int deg, juce::MidiBuffer& out, int pos)
+void Engine::noteOn (int m, int ch, float level, int deg, juce::MidiBuffer& out, int pos)
 {
     const int vel = std::clamp ((int) std::lround (1 + level * 126), 1, 127);
     if (notes[(size_t) m].on)
         noteOff (m, out, pos);
-    out.addEvent (juce::MidiMessage::noteOn (outChannel, m, (juce::uint8) vel), pos);
-    notes[(size_t) m] = { true, vel, t + pv[P::gate] / 1000.0 };
+    out.addEvent (juce::MidiMessage::noteOn (ch, m, (juce::uint8) vel), pos);
+    notes[(size_t) m] = { true, vel, ch, t + pv[P::gate] / 1000.0 };
 
     for (int i = std::min (logCount, (int) log.size() - 1); i > 0; --i)
         log[(size_t) i] = log[(size_t) i - 1];
@@ -483,7 +500,7 @@ void Engine::noteOff (int m, juce::MidiBuffer& out, int pos)
     auto& s = notes[(size_t) m];
     if (! s.on)
         return;
-    out.addEvent (juce::MidiMessage::noteOff (outChannel, m), pos);
+    out.addEvent (juce::MidiMessage::noteOff (s.ch, m), pos);
     s.on = false;
     s.until = std::min (s.until, t);
 }
@@ -561,8 +578,7 @@ void Engine::fillSnapshot (UiSnapshot& s) const
 
     s.mappings = mappings;
     s.mapNext = mapNext;
-    for (int m = 0; m < 128; ++m)
-        s.notes[(size_t) m] = { notes[(size_t) m].on, notes[(size_t) m].vel, notes[(size_t) m].until };
+    s.notes = notes;
     s.held = held;
     s.heldCount = numHeld;
     s.seq = poly() ? polySeq : monoSeq;

@@ -62,7 +62,8 @@ void MiditinProcessor::prepareToPlay (double sampleRate, int)
     UiSnapshot& s = snapshots.back();
     engine.fillSnapshot (s);
     for (int m = 0; m < 128; ++m)
-        pendingOffs[(size_t) m] = pendingOffs[(size_t) m] || s.notes[(size_t) m].on;
+        if (s.notes[(size_t) m].on)
+            pendingOffs[(size_t) m] = s.notes[(size_t) m].ch;
 
     engine.prepare (sampleRate);
     preview.prepare (sampleRate);
@@ -106,15 +107,16 @@ void MiditinProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     midi.clear();
 
     for (int m = 0; m < 128; ++m)
-        if (std::exchange (pendingOffs[(size_t) m], false))
-            midi.addEvent (juce::MidiMessage::noteOff (1, m), 0);
+        if (const int ch = std::exchange (pendingOffs[(size_t) m], 0))
+            midi.addEvent (juce::MidiMessage::noteOff (ch, m), 0);
 
     fifo.read (fifo.getNumReady()).forEach ([&] (int i) {
         const auto& e = events[(size_t) i];
         switch (e.type)
         {
-            case UiEvent::noteOn:      input.addEvent (juce::MidiMessage::noteOn (1, e.note, e.vel), 0); break;
-            case UiEvent::noteOff:     input.addEvent (juce::MidiMessage::noteOff (1, e.note), 0); break;
+            // The IN keyboard plays on CH, so a channel filter never drops it.
+            case UiEvent::noteOn:      input.addEvent (juce::MidiMessage::noteOn (std::max (1, audioPatch.inChannel), e.note, e.vel), 0); break;
+            case UiEvent::noteOff:     input.addEvent (juce::MidiMessage::noteOff (std::max (1, audioPatch.inChannel), e.note), 0); break;
             case UiEvent::releaseHeld: engine.releaseHeld (midi, 0); break;
             case UiEvent::kick:        engine.kick(); break;
         }

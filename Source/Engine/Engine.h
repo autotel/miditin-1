@@ -26,6 +26,7 @@ struct Chain
 {
     bool     active = false;
     int      note   = -1;     // poly: the input note that owns this chain
+    int      ch     = 1;      // poly: its MIDI channel, which the voice's notes go out on
     uint32_t age    = 0;
     EnergyInputs in;
     double   lfoOff = 0;
@@ -63,7 +64,7 @@ struct UiSnapshot
         int    arpI = -1, arpPrev = -1, melI = -1;
     };
     struct Mapping { int deg = 0, note = -1; double t = -9; };
-    struct Sounding { bool on = false; int vel = 0; double until = -9; };
+    struct Sounding { bool on = false; int vel = 0, ch = 1; double until = -9; };
     struct LogItem { int note = 0, deg = 0; };
 
     uint64_t serial = 0;
@@ -181,6 +182,7 @@ private:
 
     std::array<int, 128> held {};
     std::array<float, 128> heldVel {};   // beside `held`: each held note's velocity
+    std::array<int, 128> heldCh {};      // ... and its channel
     int    clockCount = 0;                 // MIDI clock ticks since the last start
     double lastClockT = -9;                // engine time of the last 0xF8
     int   numHeld = 0;
@@ -192,7 +194,7 @@ private:
     ToneSeq polySeq, monoSeq;
     Pool  pool;
 
-    struct Sounding { bool on = false; int vel = 0; double until = -9; };
+    using Sounding = UiSnapshot::Sounding;
     std::array<Sounding, 128> notes {};
 
     // display-only state
@@ -210,9 +212,9 @@ private:
     void applyPatch (const Patch&, juce::MidiBuffer& out);
     void rebuild();
     void handle (const juce::MidiMessage&, juce::MidiBuffer& out, int pos);
-    void inputNoteOn (int note, float vel, juce::MidiBuffer& out, int pos);
+    void inputNoteOn (int note, float vel, int ch, juce::MidiBuffer& out, int pos);
     void inputNoteOff (int note, juce::MidiBuffer& out, int pos);
-    Chain& claimVoice (int note, juce::MidiBuffer& out, int pos);
+    Chain& claimVoice (int note, int ch, juce::MidiBuffer& out, int pos);
     void dropVoice (int note, juce::MidiBuffer& out, int pos);
     /** RETRIG: the chain's LFO starts over at PHASE. */
     void restartLfo (Chain&);
@@ -220,7 +222,7 @@ private:
     void stepPulse (Chain&, juce::MidiBuffer& out, int pos, double dClock);
     void pulse (Chain&, float strength, juce::MidiBuffer& out, int pos);
     bool clockPulses() const noexcept { return patch.run && patch.pulse == PulseKind::midiIn && patch.midiInSource == MidiInSource::clock; }
-    void noteOn (int note, float level, int deg, juce::MidiBuffer& out, int pos);
+    void noteOn (int note, int ch, float level, int deg, juce::MidiBuffer& out, int pos);
     void noteOff (int note, juce::MidiBuffer& out, int pos);
 };
 } // namespace mdt

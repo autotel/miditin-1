@@ -76,7 +76,7 @@ private:
     juce::SpinLock postLock;   // several message-thread callers; the audio side never takes it
 
     juce::MidiBuffer input;
-    std::array<bool, 128> pendingOffs {};
+    std::array<int, 128> pendingOffs {};   // the channel to release each note on; 0 = none
     bool bypassed = false;
 
     std::atomic<bool> dirty { false };

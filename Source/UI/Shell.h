@@ -71,7 +71,7 @@ private:
     Segmented enSource { { "OSC", "VEL", "NOTE", "CC", "AUDIO" }, 5, fonts::buttonSmall };
     Segmented enShape { { "SIN", "TRI", "SAW", "SQR", "S&H" }, 5 };
     BoxButton syncBtn { "SYNC" }, retrigBtn { "RETRIG" };
-    std::unique_ptr<RangeRow> ccNumber, enAmount, enPhase;
+    std::unique_ptr<RangeRow> ccNumber, enAmount, enPhase, inChannel;
     Segmented enFilter { { "OFF", "LPF", "HPF" }, 3 };
     Segmented enEdge { { "BOTH", "+ ONLY", "- ONLY" }, 3, fonts::buttonSmall };
     // pulse

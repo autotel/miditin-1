@@ -134,6 +134,11 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
 
     // in / out
     add (releaseBtn);
+    inChannel = std::make_unique<RangeRow> ("CH", 0.0f, 16.0f, 1.0f,
+        [this] { return (float) patch.inChannel; },
+        [this] (float v) { edit ([v] (Patch& p) { p.inChannel = (int) v; }); },
+        [] (float v) { return v < 0.5f ? juce::String ("OMNI") : juce::String ((int) v); }, 18, 30);
+    add (*inChannel);
     releaseBtn.onClick = [this] { host.releaseHeld(); };
     row (gate, P::gate, 30, 40);
     gate->valueLeft = true;
@@ -401,7 +406,8 @@ void Shell::layoutControls()
     {
         const int y = bottomTop + 48 + (int) views::KH + 7;
         releaseBtn.setBounds (450 - pad - 80, y, 80, buttonH);
-        inHeldArea = juce::Rectangle<float> ((float) pad, (float) y, 450.0f - 2 * pad - 88, (float) buttonH);
+        inChannel->setBounds (450 - pad - 88 - 120, y, 120, buttonH);
+        inHeldArea = juce::Rectangle<float> ((float) pad, (float) y, 450.0f - 2 * pad - 216, (float) buttonH);
         logArea = juce::Rectangle<float> (450.0f + pad, (float) y, 450.0f - 2 * pad, (float) buttonH);
 
         // GATE and VELOCITY: what shapes the output, just above the OUT title, under the

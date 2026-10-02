@@ -43,7 +43,11 @@ with `inverse` giving the pool index for poly voices and TRANSPOSE BY IN.
 
 ## Output notes
 
-`NoteTable` tracks every sounding output note (one channel, 128 slots) with its release time.
+`notes` tracks every sounding output note (128 slots, by number) with its channel and release
+time; the note-off goes out on the note-on's channel. CH (`Patch::inChannel`) picks the input:
+OMNI, or one channel whose notes are played while every other channel passes through untouched.
+Output is on CH; under OMNI, poly voices keep their input note's channel and mono uses 1. The
+IN keyboard plays on CH. Held notes stay keyed by number (same note on two channels = one).
 Note-offs go out at gate end, on retrigger, voice removal, structural change, RUN off, transport
 stop, bypass and `releaseResources`. A melody tie holds a note with no release time; each tick the
 owning chain checks the tie is still valid (generator still melody, next step still a tie) and
