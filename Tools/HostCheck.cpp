@@ -3,8 +3,9 @@
 
 /** Loads the built VST3 the way a DAW does -- through JUCE's VST3 hosting, so the plugin's own
     wrapper, bus layout, MIDI output path and bypass handling are all in play -- and checks what
-    the in-REAPER test would: MIDI comes out, the transport drives it, a stop leaves nothing
-    hanging, state survives a reload into a fresh instance, and bypass releases what was sounding.
+    the in-REAPER test would: MIDI in shapes MIDI out (nothing while nothing is held, the held
+    chord's notes while it is, other messages passed through), a stop leaves nothing hanging, state
+    survives a reload into a fresh instance, and bypass releases what was sounding.
 
         ./build.sh hostcheck
 
@@ -34,8 +35,9 @@ void check (bool ok, const char* what)
 
 struct Run
 {
-    int ons = 0, offs = 0;
+    int ons = 0, offs = 0, ccs = 0;
     std::array<int, 128> open {};
+    std::array<bool, 128> played {};
     bool doubled = false;
 
     void take (const juce::MidiBuffer& m)
@@ -43,21 +45,26 @@ struct Run
         for (const auto md : m)
         {
             const auto msg = md.getMessage();
-            if (msg.isNoteOn()) { ++ons; doubled |= open[(size_t) msg.getNoteNumber()]++ > 0; }
+            ccs += msg.isController();
+            if (msg.isNoteOn()) { ++ons; played[(size_t) msg.getNoteNumber()] = true; doubled |= open[(size_t) msg.getNoteNumber()]++ > 0; }
             else if (msg.isNoteOff()) { ++offs; open[(size_t) msg.getNoteNumber()] = 0; }
         }
     }
     int sounding() const { int n = 0; for (int c : open) n += c > 0; return n; }
 };
 
-void render (juce::AudioPluginInstance& p, Playhead& ph, Run& run, double seconds, int block = 512)
+/** `input` goes in with the first block. */
+void render (juce::AudioPluginInstance& p, Playhead& ph, Run& run, double seconds, const juce::MidiBuffer& input = {})
 {
+    const int block = 512;
     juce::AudioBuffer<float> audio (2, block);
     audio.clear();   // the input is read now (AUDIO energy source)
     juce::MidiBuffer midi;
-    for (double t = 0; t < seconds; t += block / 48000.0)
+    for (int done = 0; done < seconds * 48000.0; done += block)
     {
         midi.clear();
+        if (done == 0)
+            midi = input;
         p.processBlock (audio, midi);
         run.take (midi);
         if (ph.playing) ph.ppq += block / 48000.0 * ph.bpm / 60.0;
@@ -93,12 +100,36 @@ int main (int argc, char** argv)
     Playhead ph;
     a->setPlayHead (&ph);
 
+    check (a->acceptsMidi(), "declares MIDI input");
     check (a->producesMidi(), "declares MIDI output");
 
+    const int chord[] { 60, 64, 67 };
+    juce::MidiBuffer press, lift;
+    for (int n : chord)
+    {
+        press.addEvent (juce::MidiMessage::noteOn (1, n, (juce::uint8) 100), 0);
+        lift.addEvent (juce::MidiMessage::noteOff (1, n), 0);
+    }
+    press.addEvent (juce::MidiMessage::controllerEvent (1, 7, 90), 0);
+
+    Run quiet;
+    render (*a, ph, quiet, 2);
+    check (quiet.ons == 0, "nothing comes out while nothing is held");
+
     Run run;
-    render (*a, ph, run, 4);
-    check (run.ons > 4, "plays notes while the transport runs");
+    render (*a, ph, run, 4, press);
+    check (run.ons > 4, "a held chord plays while the transport runs");
+    bool onlyChord = true;
+    for (int n = 0; n < 128; ++n)
+        onlyChord &= ! run.played[(size_t) n] || n == 60 || n == 64 || n == 67;
+    check (onlyChord && run.played[60] && run.played[64] && run.played[67], "the default arpeggiates the held chord's notes");
+    check (run.ccs == 1, "a CC passes through");
     check (! run.doubled, "never two note-ons without a note-off between");
+
+    const int before = run.ons;
+    render (*a, ph, run, 0.5, lift);
+    check (run.sounding() == 0 && run.ons == before, "lifting the chord stops the notes; nothing left sounding");
+    render (*a, ph, run, 0.01, press);
 
     ph.playing = false;
     render (*a, ph, run, 0.02);
@@ -113,9 +144,11 @@ int main (int argc, char** argv)
     b->setStateInformation (state.getData(), (int) state.getSize());
     // Byte equality is too strict for the first trip -- a log-curve parameter's float goes through
     // its normalised value and back -- so: every parameter within rounding, and a second trip exact.
+    // The VST3 wrapper's "MIDI CC" parameters carry the last CC received, not plugin state.
     bool same = a->getParameters().size() == b->getParameters().size();
     for (int i = 0; same && i < a->getParameters().size(); ++i)
-        same = std::abs (a->getParameters()[i]->getValue() - b->getParameters()[i]->getValue()) < 1e-4f;
+        same = a->getParameters()[i]->getName (64).startsWith ("MIDI CC")
+            || std::abs (a->getParameters()[i]->getValue() - b->getParameters()[i]->getValue()) < 1e-4f;
     check (same, "every parameter survives a reload into a fresh instance");
     juce::MemoryBlock once, twice;
     b->getStateInformation (once);

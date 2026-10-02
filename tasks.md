@@ -9,14 +9,6 @@ Source for every phase: `miditin 1 - spec.md` (§ numbers below) and the v2 prot
 Port behaviour from the prototype; do not reinvent it. Each phase ends with `./build.sh test` green
 and one commit per task.
 
-## MIDI processor (author, 2026-10-02)
-
-miditin 1 takes what comes in as MIDI; sending MIDI out is its main function; the IN keyboard is a
-utility. Deviates from the prototype (a self-playing page) -- record each in `wiki/history.md`.
-
-- [sonnet] **Host check feeds MIDI in.** With defaults: nothing out while nothing held; a held
-  chord gives notes only from its pitches; a CC passes through; releasing leaves nothing sounding.
-
 ## Needs the author
 
 - [author] The manual REAPER pass in `wiki/testing.md` -- needs someone at the screen; agents

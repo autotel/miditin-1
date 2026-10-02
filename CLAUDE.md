@@ -1,6 +1,8 @@
 # MIDITIN 1 — coding agent entry point
 
-JUCE 8 VST3/Standalone **generative MIDI plugin** (Linux). A chain read left → right:
+JUCE 8 VST3/Standalone **generative MIDI processor** (Linux): MIDI in shapes MIDI out, nothing
+comes out while no input note is held, and the IN keyboard and preview synth are utilities. A
+chain read left → right:
 **ENERGY** (one LFO, or velocity / pitch / CC of the input) drives a **PULSE** generator (wheel of
 fortune, ball shaker, digital grid, or the MIDI input itself); each pulse advances a **GENERATE**
 stage (arpeggio, held-input arp, 16-step melody) that emits *relative tones*; **TRANSFORM** maps
