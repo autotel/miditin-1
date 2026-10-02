@@ -77,6 +77,12 @@ are routing; automating them mid-note is how notes hang. This keeps the rule one
 
 The editor animates from the latest `UiSnapshot` at its frame rate and keeps its own short
 histories (energy plot) from successive snapshots. Closing it changes no MIDI.
+Frames come from `juce::VBlankAttachment`: on Linux the peer flushes repaints on its own vblank
+timer, and a separate 60 Hz `Timer` beat against it, dropping or doubling frames. The audio thread
+publishes one snapshot per block, so the display runs a block behind on its own clock and
+`blend()`s the last two (wheel, balls, box, energy, beat). Measured at 60 fps, |Δstep| / mean step
+of the wheel angle: block 256 0.08 → 0.03, 1024 0.60 → 0.09 (39 stalled frames in 3 s → 0),
+2048 2.0 → 0.07. Painting the animated bands costs 3.5 ms a frame at 1x, 6.6 ms at 2x.
 The shell is laid out once at 900 x 570; the editor resizes at the design aspect and scales the shell
 with one transform. The processor keeps the width (and saves it), since the editor dies on close.
 

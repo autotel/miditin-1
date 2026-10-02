@@ -9,14 +9,6 @@ Source for every phase: `miditin 1 - spec.md` (§ numbers below) and the v2 prot
 Port behaviour from the prototype; do not reinvent it. Each phase ends with `./build.sh test` green
 and one commit per task.
 
-## Layout, melody, animation (author, 2026-10-02)
-
-- [opus] **Smoother animation.** Measure first: paint time per frame (snapshot tool, timed), the
-  editor timer's real rate, and snapshot cadence (one per block -- at 1024+ samples that is under
-  50 Hz). Then fix the dominant cause: e.g. timer driven by `juce::VBlankAttachment`, cheaper
-  repaint regions, drop the IN transparency layer for a precomputed colour, or interpolate
-  positions between snapshots. Record the numbers in `wiki/architecture.md`.
-
 ## Needs the author
 
 - [author] The manual REAPER pass in `wiki/testing.md` -- needs someone at the screen; agents

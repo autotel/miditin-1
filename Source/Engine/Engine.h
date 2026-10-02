@@ -88,6 +88,44 @@ struct UiSnapshot
     float  cc = 0.5f;
 };
 
+/** The display between two snapshots: `b` with its continuous state (time, energy, wheel, balls,
+    box, beat) taken back to engine time `t` in [a.t, b.t]. The audio thread publishes once per
+    block, so frames between blocks would otherwise stall and jump. Discrete state is `b`'s. */
+inline void blend (const UiSnapshot& a, const UiSnapshot& b, double t, UiSnapshot& out)
+{
+    out = b;
+    if (b.t <= a.t || a.numViews != b.numViews)
+        return;
+    const double x = std::clamp ((t - a.t) / (b.t - a.t), 0.0, 1.0);
+    const auto mix = [x] (auto p, auto q) { return (decltype (q)) (p + (q - p) * x); };
+    out.t = mix (a.t, b.t);
+    out.clock = mix (a.clock, b.clock);
+    out.energy = mix (a.energy, b.energy);
+    for (int i = 0; i < b.numViews; ++i)
+    {
+        const auto& p = a.views[(size_t) i];
+        auto& q = out.views[(size_t) i];
+        if (p.note != q.note)
+            continue;
+        q.energy = mix (p.energy, q.energy);
+        q.energyRaw = mix (p.energyRaw, q.energyRaw);
+        q.wheelA = mix (p.wheelA, q.wheelA);
+        q.wheelW = mix (p.wheelW, q.wheelW);
+        q.flick = mix (p.flick, q.flick);
+        q.effort = mix (p.effort, q.effort);
+        q.boxX = mix (p.boxX, q.boxX);
+        q.boxY = mix (p.boxY, q.boxY);
+        if (std::abs (q.beat - p.beat) < 1)   // not across a relock to the host bar
+            q.beat = mix (p.beat, q.beat);
+        if (p.ballCount == q.ballCount)
+            for (int k = 0; k < q.ballCount; ++k)
+            {
+                q.balls[(size_t) k].x = mix (p.balls[(size_t) k].x, q.balls[(size_t) k].x);
+                q.balls[(size_t) k].y = mix (p.balls[(size_t) k].y, q.balls[(size_t) k].y);
+            }
+    }
+}
+
 class Engine
 {
 public:

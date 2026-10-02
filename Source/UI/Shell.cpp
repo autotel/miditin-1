@@ -142,14 +142,13 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
 
     setSize (width, height);
     syncControls();
-    startTimerHz (60);
 }
 
-Shell::~Shell() { stopTimer(); }
+Shell::~Shell() = default;
 
-void Shell::timerCallback()
+void Shell::onVBlank (double seconds)
 {
-    advanceFrame();
+    advanceFrame (seconds);
     if (presetPanel != nullptr && presetPanel->isVisible())
         return;
     // Only what animates: the canvas band (cables included), the transform's held-notes line, and
@@ -319,11 +318,12 @@ void Shell::layoutControls()
         }
         if (shaker)
         {
-            shakeMode.setBounds (st.next (Segmented::heightFor (1, 3)));
             agitate->setBounds (st.next (rowH));
             balls->setBounds (st.next (rowH));
             bounce->setBounds (st.next (rowH));
-            kickBtn.setBounds (st.next (bigButtonH));
+            auto r = st.next (bigButtonH);
+            shakeMode.setBounds (r.removeFromLeft (r.getWidth() * 3 / 5));
+            kickBtn.setBounds (r.withTrimmedLeft (gap));
         }
         if (digital)
         {
@@ -412,9 +412,29 @@ views::Frame Shell::frame() const
     return f;
 }
 
-void Shell::advanceFrame()
+void Shell::advanceFrame (double seconds)
 {
-    snap = &host.snapshot();
+    const auto& latest = host.snapshot();
+    if (latest.serial != curSnap.serial)
+    {
+        prevSnap = latest.t < curSnap.t ? latest : curSnap;   // a re-prepare restarts engine time
+        curSnap = latest;
+        curWall = seconds;
+    }
+
+    // The display clock runs a block behind the audio thread, so there is always a newer snapshot
+    // to blend toward: wall time since the newest arrived, minus one block, gently tracked so
+    // arrival jitter does not shake it. No new blocks (stopped, bypassed) and it rests on the newest.
+    const double wallDt = lastWall < 0 ? 0 : juce::jlimit (0.0, 0.1, seconds - lastWall);
+    lastWall = seconds;
+    const double before = shownT;
+    const double target = curSnap.t - (curSnap.t - prevSnap.t) + (seconds - curWall);
+    shownT += wallDt;
+    shownT += (target - shownT) * 0.1;
+    shownT = juce::jlimit (prevSnap.t, curSnap.t, shownT);
+    blend (prevSnap, curSnap, shownT, shown);
+    snap = &shown;
+
     if (host.patchVersion() != seenVersion)
     {
         seenVersion = host.patchVersion();
@@ -425,10 +445,6 @@ void Shell::advanceFrame()
     for (auto* c : getChildren())
         if (auto* r = dynamic_cast<RangeRow*> (c))
             r->refresh();
-
-    if (snap->serial == lastSerial)
-        return;
-    lastSerial = snap->serial;
 
     // Keep each view's history with the view: poly voices come and go, and their lines must not
     // jump between them.
@@ -444,8 +460,7 @@ void Shell::advanceFrame()
     histories = next;
     numHistories = snap->numViews;
 
-    const double dt = juce::jlimit (0.0, 0.05, snap->t - lastT);
-    lastT = snap->t;
+    const double dt = juce::jlimit (0.0, 0.05, shownT - before);
     flow += dt * (6 + snap->energy * 70);
 }
 
@@ -733,11 +748,11 @@ void Shell::mouseDown (const juce::MouseEvent& e)
         if (hit == nullptr)
             return;
         // Lower on the key is louder, as on a real one.
-        const float vel = juce::jlimit (0.05f, 1.0f, l.y / (hit->black ? views::KH * 0.6f : views::KH));
+        const float velocity = juce::jlimit (0.05f, 1.0f, l.y / (hit->black ? views::KH * 0.6f : views::KH));
         if (std::find (snap->held.begin(), snap->held.begin() + snap->heldCount, hit->m) != snap->held.begin() + snap->heldCount)
             host.noteOff (hit->m);
         else
-            host.noteOn (hit->m, vel);
+            host.noteOn (hit->m, velocity);
     }
 }
 

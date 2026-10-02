@@ -11,7 +11,7 @@
     the controls as children. It never decides when a note happens. */
 namespace mdt
 {
-class Shell : public juce::Component, private juce::Timer
+class Shell : public juce::Component
 {
 public:
     static constexpr int width = 900, height = 570;
@@ -26,7 +26,9 @@ public:
     void patchReloaded();
 
     /** One frame without the timer: the snapshot tool calls this before painting. */
-    void advanceFrame();
+    /** One display frame at wall time `seconds`: picks up the latest snapshot and moves the
+        display clock. The vblank calls it; the snapshot tool calls it with simulated time. */
+    void advanceFrame (double seconds);
 
     void paint (juce::Graphics&) override;
     void resized() override;
@@ -45,9 +47,10 @@ private:
     Host& host;
     Patch patch;                 // the editor's copy; every edit goes through `edit()`
     uint32_t seenVersion = 0;
-    const UiSnapshot* snap = nullptr;
-    uint64_t lastSerial = 0;
-    double lastT = 0, flow = 0;
+    const UiSnapshot* snap = nullptr;   // = &shown once frames run
+    UiSnapshot prevSnap, curSnap, shown;
+    double shownT = 0, lastWall = -1, curWall = 0;
+    double flow = 0;
     std::array<views::History, maxVoices> histories {};
     int numHistories = 0;
     juce::String energyHover;
@@ -100,7 +103,10 @@ private:
     std::vector<std::pair<juce::String, juce::Rectangle<float>>> sideLabels;
     juce::Rectangle<float> heldTextArea, inHeldArea, logArea, velArea;
 
-    void timerCallback() override;
+    /** Frames at the display's own refresh, in step with the peer's repaints: a separate 60 Hz
+        timer beats against them and drops or doubles frames. */
+    juce::VBlankAttachment vblank { this, [this] (double seconds) { onVBlank (seconds); } };
+    void onVBlank (double seconds);
     void edit (const std::function<void (Patch&)>&);
     void syncControls();
     void layoutControls();

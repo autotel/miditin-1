@@ -24,6 +24,7 @@ struct FakeHost final : Host
     UiSnapshot snap;
     uint32_t version = 0;
     std::vector<int> pressed;
+    double wall = 0;   // simulated display time, one frame per block
 
     FakeHost() { engine.prepare (48000); }
 
@@ -50,7 +51,7 @@ struct FakeHost final : Host
             engine.process (p, pv, {}, in, out, block);
             in.clear();
             engine.fillSnapshot (snap);
-            shell.advanceFrame();
+            shell.advanceFrame (wall += block / 48000.0);
         }
     }
 };

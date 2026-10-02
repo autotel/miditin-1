@@ -87,8 +87,9 @@ struct EngineTests final : juce::UnitTest
             for (auto& ev : r.out)
                 if (ev.vel > 0)
                     played.push_back (ev.note);
+            const int chord[] { 60, 64, 67 };
             for (size_t i = 0; i < played.size(); ++i)
-                expectEquals (played[i], (int[]) { 60, 64, 67 }[i % 3]);
+                expectEquals (played[i], chord[i % 3]);
             r.run (2);
             r.patch.run = false;
             r.run (0.1);
@@ -335,6 +336,28 @@ struct EngineTests final : juce::UnitTest
             tail.clear();
             ps.render ({}, tail);
             expect (tail.getMagnitude (24000, 24000) < 1e-4f);
+        }
+
+        beginTest ("blend: continuous state between two snapshots, discrete state from the newer");
+        {
+            UiSnapshot a, b, out;
+            a.t = 1; b.t = 2; a.serial = 1; b.serial = 2;
+            a.views[0].wheelA = 0; b.views[0].wheelA = 4;
+            a.views[0].ballCount = b.views[0].ballCount = 1;
+            a.views[0].balls[0].x = 0.2f; b.views[0].balls[0].x = 0.6f;
+            a.views[0].beat = 3.5; b.views[0].beat = 0;   // a relock is not swept through
+            b.views[0].arpI = 3;
+            blend (a, b, 1.25, out);
+            expectWithinAbsoluteError (out.t, 1.25, 1e-9);
+            expectWithinAbsoluteError (out.views[0].wheelA, 1.0, 1e-9);
+            expectWithinAbsoluteError (out.views[0].balls[0].x, 0.3f, 1e-6f);
+            expectEquals (out.views[0].beat, 0.0);
+            expectEquals (out.views[0].arpI, 3);
+            blend (a, b, 9, out);
+            expectEquals (out.t, 2.0);
+            b.numViews = 2;   // a voice came or went: no blending across it
+            blend (a, b, 1.5, out);
+            expectEquals (out.t, 2.0);
         }
 
         beginTest ("snapshot carries views, held notes and the last mapping");

@@ -44,7 +44,7 @@ struct Frame
 
     double t() const { return s->t; }
     /** 1 at `t0`, fading to 0 over `len` seconds -- the prototype's `dk()`. */
-    float dk (double t0, double len) const { return (float) std::max (0.0, 1.0 - (s->t - t0) / len); }
+    float dk (double t0, double len) const { return (float) std::clamp (1.0 - (s->t - t0) / len, 0.0, 1.0); }
 };
 
 /** Points the connections attach to, in each canvas's local coordinates. */
