@@ -165,6 +165,37 @@ struct EngineTests final : juce::UnitTest
                 expect (r.balanced());
             }
 
+        beginTest ("velocity: pulse strength by default; input, energy and the clamp by their amounts");
+        {
+            auto firstVel = [] (auto&& setup) {
+                Rig r;
+                r.patch.pulse = PulseKind::midiIn;
+                r.patch.enSource = EnergySource::note;   // C2..C7 -> 0..1, so note 60 is 0.5
+                r.pv[P::enCenter] = 0.5f; r.pv[P::enDepth] = 1;
+                setup (r);
+                r.run (0.5);
+                for (auto& ev : r.out) if (ev.vel > 0) return ev.vel;
+                return -1;
+            };
+            const auto press = [] (Rig& r, int v) { r.noteOn (0.1, 60, v); };
+            expectEquals (firstVel ([&] (Rig& r) { press (r, 80); }), 80);   // strength = input under MIDI-in
+            expectEquals (firstVel ([&] (Rig& r) { press (r, 80); r.pv[P::velPulse] = 0; r.pv[P::velEnergy] = 1; }), 64);
+            expectEquals (firstVel ([&] (Rig& r) { press (r, 127); r.pv[P::velEnergy] = 1; }), 127);
+            expectEquals (firstVel ([&] (Rig& r) { press (r, 1); r.pv[P::velPulse] = 0; }), 1);
+
+            // Mono, wheel-paced: INPUT follows the latest still-held note, through a later release.
+            Rig r;
+            r.pv[P::velPulse] = 0; r.pv[P::velInput] = 1;
+            r.noteOn (0.0, 60, 40); r.noteOn (0.0, 64, 100); r.noteOn (0.0, 67, 127);
+            r.noteOff (2, 67);
+            r.run (4);
+            std::vector<int> before, after;
+            for (auto& ev : r.out) if (ev.vel > 0) (ev.time < 2 ? before : after).push_back (ev.vel);
+            expect (! before.empty() && ! after.empty());
+            for (int v : before) expectEquals (v, 127);
+            for (int v : after) expectEquals (v, 100);
+        }
+
         beginTest ("non-note input passes through at its position; input notes do not");
         {
             Rig r;

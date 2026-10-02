@@ -122,6 +122,26 @@ juce::Rectangle<float> RangeRow::track() const
 void RangeRow::paint (juce::Graphics& g)
 {
     const auto b = getLocalBounds().toFloat();
+    const float frac = juce::jlimit (0.0f, 1.0f, (shown - min) / (max - min));
+    if (knob)
+    {
+        // 270 degrees of sweep, the gap at the bottom; 0 points down-left, full down-right.
+        const auto k = b.withWidth (b.getHeight()).reduced (1.5f);
+        const float a = juce::MathConstants<float>::pi * (1.25f - 1.5f * frac);
+        const auto c = k.getCentre();
+        const float r = k.getWidth() / 2;
+        g.setColour (theme::ink);
+        g.drawEllipse (k, 1.2f);
+        g.drawLine (c.x + 0.25f * r * std::cos (a), c.y - 0.25f * r * std::sin (a),
+                    c.x + r * std::cos (a), c.y - r * std::sin (a), 1.5f);
+        auto text = b.withTrimmedLeft (b.getHeight() + 6);
+        g.setColour (theme::muted);
+        fonts::drawTracked (g, label, text.removeFromTop (b.getHeight() / 2), fonts::label, juce::Justification::centredLeft);
+        g.setColour (theme::ink);
+        fonts::drawTracked (g, show (shown), text, fonts::label, juce::Justification::centredLeft);
+        return;
+    }
+
     if (labelWidth > 0)
     {
         g.setColour (theme::muted);
@@ -133,7 +153,6 @@ void RangeRow::paint (juce::Graphics& g)
     const auto t = track();
     const float cy = t.getCentreY(), r = 5.0f;
     const float x0 = t.getX() + r, x1 = t.getRight() - r;
-    const float frac = juce::jlimit (0.0f, 1.0f, (shown - min) / (max - min));
     const float x = x0 + frac * (x1 - x0);
     g.setColour (theme::line2);
     g.fillRoundedRectangle (x0 - 2, cy - 2, x1 - x0 + 4, 4, 2);
@@ -161,10 +180,22 @@ void RangeRow::setFromX (float x)
 void RangeRow::mouseDown (const juce::MouseEvent& e)
 {
     if (begin) begin();
-    setFromX (e.position.x);
+    dragFrom = shown;
+    if (! knob)
+        setFromX (e.position.x);
 }
 
-void RangeRow::mouseDrag (const juce::MouseEvent& e) { setFromX (e.position.x); }
+void RangeRow::mouseDrag (const juce::MouseEvent& e)
+{
+    if (! knob)
+        return setFromX (e.position.x);
+    // 150 px of travel covers the range.
+    float v = dragFrom - (float) e.getDistanceFromDragStartY() / 150.0f * (max - min);
+    if (step > 0)
+        v = min + std::round ((v - min) / step) * step;
+    set (juce::jlimit (min, max, v));
+    refresh();
+}
 void RangeRow::mouseUp (const juce::MouseEvent&) { if (end) end(); }
 
 void RangeRow::mouseDoubleClick (const juce::MouseEvent&)

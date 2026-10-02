@@ -77,3 +77,11 @@ are routing; automating them mid-note is how notes hang. This keeps the rule one
 
 The editor animates from the latest `UiSnapshot` at its frame rate and keeps its own short
 histories (energy plot) from successive snapshots. Closing it changes no MIDI.
+
+## Output velocity
+
+The VELOCITY knobs (`vel_energy` / `vel_pulse` / `vel_input`, 0..1) weight three sources, summed
+and clamped to 0..1 → 1..127: the chain's energy at the pulse, the pulse strength, and the input
+note's velocity — poly the voice's own, mono the latest still-held note (`heldVel` sits beside
+`held`; `in.vel` zeroes on any note-off, as the energy source wants). Defaults 0 / 1 / 0 are the
+old strength-only velocity. A knob is `RangeRow` with `knob = true`.

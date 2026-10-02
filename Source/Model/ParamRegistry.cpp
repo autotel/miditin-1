@@ -30,6 +30,10 @@ const std::array<ParamSpec, numParams>& params()
         { "tf_octave",  "Transform octave",         "OCTAVE",  1, 7,  4, 0, Fmt::plain },
         { "tf_octlen",  "Transform octave length",  "OCT LEN", 1, 24, 12, 1, Fmt::semitones },
         { "gate",       "Gate",                     "GATE",    30, 1200, 180, 10, Fmt::ms },
+        // VELOCITY: how much of each adds to the output velocity, summed and clamped.
+        { "vel_energy", "Velocity from energy",     "ENERGY",  0, 1,  0, 0, Fmt::plain },
+        { "vel_pulse",  "Velocity from pulse",      "PULSE",   0, 1,  1, 0, Fmt::plain },
+        { "vel_input",  "Velocity from input",      "INPUT",   0, 1,  0, 0, Fmt::plain },
         { "bpm",        "Tempo without host",       "BPM",     60, 200, 112, 1, Fmt::integer },
     } };
     return table;

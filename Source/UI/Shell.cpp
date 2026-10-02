@@ -132,6 +132,11 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
     releaseBtn.onClick = [this] { host.releaseHeld(); };
     row (gate, P::gate, 30, 40);
     gate->valueLeft = true;
+    for (int i = 0; i < 3; ++i)
+    {
+        row (vel[(size_t) i], (P) ((int) P::velEnergy + i));
+        vel[(size_t) i]->knob = true;
+    }
 
     setSize (width, height);
     syncControls();
@@ -376,6 +381,12 @@ void Shell::layoutControls()
         inHeldArea = juce::Rectangle<float> ((float) pad, (float) y, 450.0f - 2 * pad - 88, (float) buttonH);
         gate->setBounds (450 + pad, y + 3, 30 + 6 + 70 + 6 + 40, rowH);
         logArea = juce::Rectangle<float> (450.0f + pad + 160, (float) y, 450.0f - 2 * pad - 160, (float) buttonH);
+
+        // VELOCITY: three knobs in the free strip under OUT.
+        const int ky = y + buttonH + 8, kh = 26;
+        velArea = juce::Rectangle<float> (450.0f + pad, (float) ky, 70, (float) kh);
+        for (int i = 0; i < 3; ++i)
+            vel[(size_t) i]->setBounds (450 + pad + 70 + i * 110, ky, 100, kh);
     }
 }
 
@@ -536,6 +547,7 @@ void Shell::drawBottomText (juce::Graphics& g)
     fonts::drawTracked (g, heldText (*snap), inHeldArea.withTrimmedLeft (38), fonts::label, juce::Justification::centredLeft);
     g.setColour (theme::muted);
     fonts::drawTracked (g, "GATE", juce::Rectangle<float> (450.0f + pad, (float) gate->getY(), 30, rowH), fonts::label, juce::Justification::centredLeft);
+    fonts::drawTracked (g, "VELOCITY", velArea, fonts::label, juce::Justification::centredLeft);
 
     // Recent-notes log: newest on the left of the right-aligned run, fading with age.
     float right = logArea.getRight();

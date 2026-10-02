@@ -4,7 +4,7 @@
 #include "Host.h"
 
 /** The prototype's three control shapes, drawn rather than skinned: a pill-shaped segmented
-    control, a bordered toggle button, and a labelled range slider. */
+    control, a bordered toggle button, and a labelled range slider (or knob). */
 namespace mdt
 {
 /** A rounded track with one segment selected (ink fill, paper text). Wraps into rows when given
@@ -76,6 +76,9 @@ public:
     /** Where the readout sits: right-aligned after the track, or left-aligned (header / gate). */
     bool valueLeft = false;
     float stepOverride = -1;
+    /** Drawn as a knob instead -- an outline and an angle line, label over readout to its right --
+        and dragged vertically. */
+    bool knob = false;
 
 private:
     juce::String label;
@@ -85,7 +88,7 @@ private:
     std::function<juce::String (float)> show;
     std::function<void()> begin, end;
     int labelWidth, valueWidth;
-    float shown = 0;
+    float shown = 0, dragFrom = 0;
 
     juce::Rectangle<float> track() const;
     void setFromX (float x);

@@ -196,7 +196,10 @@ void Engine::inputNoteOn (int n, float vel, juce::MidiBuffer& out, int pos)
     if (std::find (held.begin(), held.begin() + numHeld, n) != held.begin() + numHeld)
         return;
     if (numHeld < (int) held.size())
+    {
+        heldVel[(size_t) numHeld] = vel;
         held[(size_t) numHeld++] = n;
+    }
     rebuild();
 
     inT = t;
@@ -224,8 +227,14 @@ void Engine::inputNoteOff (int n, juce::MidiBuffer& out, int pos)
 {
     global.in.vel = 0;   // spec §3: vel drops to 0 on note-off
     dropVoice (n, out, pos);
-    auto end = std::remove (held.begin(), held.begin() + numHeld, n);
-    numHeld = (int) (end - held.begin());
+    int kept = 0;
+    for (int i = 0; i < numHeld; ++i)
+        if (held[(size_t) i] != n)
+        {
+            heldVel[(size_t) kept] = heldVel[(size_t) i];
+            held[(size_t) kept++] = held[(size_t) i];
+        }
+    numHeld = kept;
     rebuild();
 }
 
@@ -417,16 +426,20 @@ void Engine::pulse (Chain& c, float strength, juce::MidiBuffer& out, int pos)
     if (! m)
         return;
 
-    noteOn (*m, strength, step.value, out, pos);
+    // VELOCITY: energy, pulse strength and the input note's velocity, each by its amount. Poly:
+    // the voice's own note; mono: the latest still held (in.vel drops on any note-off).
+    const float inVel = poly() ? c.in.vel : heldVel[(size_t) numHeld - 1];
+    const float level = c.energy * pv[P::velEnergy] + strength * pv[P::velPulse] + inVel * pv[P::velInput];
+    noteOn (*m, level, step.value, out, pos);
     if (patch.gen == GenKind::melody && c.gen.nextIsTie (patch, melLen))
         notes[(size_t) *m].until = holdForever;
 }
 
 // -- output ----------------------------------------------------------------------------------------
 
-void Engine::noteOn (int m, float strength, int deg, juce::MidiBuffer& out, int pos)
+void Engine::noteOn (int m, float level, int deg, juce::MidiBuffer& out, int pos)
 {
-    const int vel = std::clamp ((int) std::lround (1 + strength * 126), 1, 127);
+    const int vel = std::clamp ((int) std::lround (1 + level * 126), 1, 127);
     if (notes[(size_t) m].on)
         noteOff (m, out, pos);
     out.addEvent (juce::MidiMessage::noteOn (outChannel, m, (juce::uint8) vel), pos);

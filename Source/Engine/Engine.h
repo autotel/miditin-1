@@ -134,6 +134,7 @@ private:
     std::array<Chain, maxVoices> voices {};
 
     std::array<int, 128> held {};
+    std::array<float, 128> heldVel {};   // beside `held`: each held note's velocity
     int   numHeld = 0;
     float cc = 0.5f;
     // ponytail: fixed 30 ms RMS window; a knob if it proves too jumpy or too slow.
@@ -168,7 +169,7 @@ private:
     void tick (juce::MidiBuffer& out, int pos, double dClock);
     void stepPulse (Chain&, juce::MidiBuffer& out, int pos, double dClock);
     void pulse (Chain&, float strength, juce::MidiBuffer& out, int pos);
-    void noteOn (int note, float strength, int deg, juce::MidiBuffer& out, int pos);
+    void noteOn (int note, float level, int deg, juce::MidiBuffer& out, int pos);
     void noteOff (int note, juce::MidiBuffer& out, int pos);
 };
 } // namespace mdt

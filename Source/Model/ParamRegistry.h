@@ -18,7 +18,7 @@ enum class P
     whModOffset, whModScale, shModOffset, shModScale, dgModOffset, dgModScale,
     melLength,
     tfOctave, tfOctLen,
-    gate, bpm,
+    gate, velEnergy, velPulse, velInput, bpm,
     count
 };
 inline constexpr int numParams = (int) P::count;

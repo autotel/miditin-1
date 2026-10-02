@@ -93,10 +93,11 @@ private:
     // in / out
     BoxButton releaseBtn { "RELEASE ALL" };
     std::unique_ptr<RangeRow> gate;
+    std::array<std::unique_ptr<RangeRow>, 3> vel;   // VELOCITY: energy, pulse, input
 
     /** Labels drawn beside controls ("FILTER", "BASE"...), placed by `layoutControls()`. */
     std::vector<std::pair<juce::String, juce::Rectangle<float>>> sideLabels;
-    juce::Rectangle<float> heldTextArea, inHeldArea, logArea;
+    juce::Rectangle<float> heldTextArea, inHeldArea, logArea, velArea;
 
     void timerCallback() override;
     void edit (const std::function<void (Patch&)>&);
