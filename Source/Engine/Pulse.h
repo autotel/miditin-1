@@ -28,12 +28,14 @@ struct Wheel
     float  flick = 0;      // pointer flick, 1 at a peg, decays
     double angleBase = 0;  // ANGLE: where energy 0 points, re-based on a switch so nothing jumps
     WheelMode lastMode = WheelMode::speed;
+    int    lastSlices = 0;
+    float  strength = 0;   // of this step's pulses
 
     /** SPEED: `value` is rev/s, the spin force -- speed eases toward it with inertia. ANGLE:
         `value` is turns, and the wheel is sprung (critically damped) to that angle, so pegs pass
         only while the energy moves. A peg passing the pointer is a pulse, stronger the faster the
-        wheel turns, either way. */
-    float step (float value, WheelMode mode, int slices, double dt) noexcept
+        wheel turns, either way. Returns how many pegs passed this step -- all of them pulse. */
+    int step (float value, WheelMode mode, int slices, double dt) noexcept
     {
         const double target = value * twoPi;
         if (mode == WheelMode::angle)
@@ -50,11 +52,18 @@ struct Wheel
         a += w * dt;
         flick = std::max (0.0f, flick - (float) dt * 7);
         const long s = (long) std::floor (a / (twoPi / slices));
-        if (s == slot)
-            return -1;
+        if (slices != lastSlices)   // a SLICES edit moves every peg: resync, pulse nothing
+        {
+            lastSlices = slices;
+            slot = s;
+        }
+        const int pegs = (int) std::min (std::abs (s - slot), (long) slices);
+        if (pegs == 0)
+            return 0;
         slot = s;
         flick = 1;
-        return std::clamp (0.3f + (float) (std::abs (w) / (twoPi * 1.4)), 0.0f, 1.0f);
+        strength = std::clamp (0.3f + (float) (std::abs (w) / (twoPi * 1.4)), 0.0f, 1.0f);
+        return pegs;
     }
 
     void kick() noexcept { w += twoPi * 1.2; }

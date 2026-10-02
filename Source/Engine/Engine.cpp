@@ -367,8 +367,9 @@ void Engine::stepPulse (Chain& c, juce::MidiBuffer& out, int pos, double dClock)
         case PulseKind::wheel:
         {
             const EnergyMod m { pv[P::whModOffset], pv[P::whModScale] };
-            const float s = c.wheel.step (m.apply (c.energy, pv[P::whSpeed], 0, 3), patch.wheelMode, pv.i (P::whSlices), dt);
-            if (s >= 0) pulse (c, s, out, pos);
+            const int pegs = c.wheel.step (m.apply (c.energy, pv[P::whSpeed], 0, 3), patch.wheelMode, pv.i (P::whSlices), dt);
+            for (int k = 0; k < pegs; ++k)
+                pulse (c, c.wheel.strength, out, pos);
             break;
         }
         case PulseKind::shaker:
@@ -401,9 +402,6 @@ void Engine::pulse (Chain& c, float strength, juce::MidiBuffer& out, int pos)
     // the display; only the generator waits. Poly voices exist only while their note is held.
     if (numHeld == 0)
         return;
-    if (t - c.lastPulseT < minPulseGap)
-        return;
-    c.lastPulseT = t;
     pulseT = genT = t;
     pulseV = strength;
 

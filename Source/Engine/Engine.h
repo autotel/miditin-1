@@ -34,7 +34,6 @@ struct Chain
     Wheel    wheel;
     Shaker   shaker;
     Digital  digital;
-    double   lastPulseT = -9;
     GenPos   gen;
     int      melNote = -1;    // the melody note this chain may be holding through ties
     bool     hasDeg  = false;
@@ -141,8 +140,6 @@ class Engine
 public:
     static constexpr double tickRate    = 1000.0;
     static constexpr double dt          = 1.0 / tickRate;
-    /** The prototype's `minPulseGap` default: a chain cannot pulse faster than this. */
-    static constexpr double minPulseGap = 0.030;
 
     /** Resets everything, including the random seeds. */
     void prepare (double sampleRate);

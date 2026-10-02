@@ -60,3 +60,7 @@ MIDI out, the IN keyboard is a utility.
   fast move the balls rode along with the box and barely met a wall (POSITION, 4 Hz square: 4
   hits in 6 s, now ~590). The display mirrors a ball across the wall it bounced off between two
   snapshots, the trail takes a vertex at each bounce, and the flash ring holds 24.
+- **No minimum pulse gap** (author: "let pulses burst"): the prototype's `minPulseGap` (30 ms per
+  chain) discarded every hit of a shaker burst after the first, and every other peg of a whipped
+  ANGLE wheel. Simultaneous pulses now each advance the generator, at the same sample. The wheel
+  counts every peg crossed in a step (a SLICES edit resyncs instead of firing).

@@ -9,13 +9,6 @@ Source for every phase: `miditin 1 - spec.md` (§ numbers below) and the v2 prot
 Port behaviour from the prototype; do not reinvent it. Each phase ends with `./build.sh test` green
 and one commit per task.
 
-## Pulses (author, 2026-10-02)
-
-- [opus] **Let pulses burst.** Drop `minPulseGap` (30 ms per chain: it discarded every hit of a
-  shaker burst after the first). The wheel pulses once per peg crossed, not once per tick, so a
-  jump over several pegs sends them all. Tests: a wheel jump of 5 pegs in one tick = 5 pulses; two
-  balls hitting in the same ms = 2 notes.
-
 ## Needs the author
 
 - [author] The manual REAPER pass in `wiki/testing.md` -- needs someone at the screen; agents

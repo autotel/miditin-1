@@ -23,30 +23,39 @@ struct PulseTests final : juce::UnitTest
         int n = 0;
         float strength = 0;
         for (int i = 0; i < 20000; ++i)
-            if (float s = w.step (0.5f, WheelMode::speed, 12, dt); s >= 0 && i >= 10000) { ++n; strength = s; }
+            if (const int k = w.step (0.5f, WheelMode::speed, 12, dt); k > 0 && i >= 10000) { n += k; strength = w.strength; }
         expect (std::abs (n - 60) <= 1, juce::String (n));
         expectWithinAbsoluteError (strength, 0.3f + 0.5f / 1.4f, 0.01f);
 
         beginTest ("wheel: speed eases in -- no pulse in the first instant from rest");
         Wheel rest;
         int early = 0;
-        for (int i = 0; i < 100; ++i) early += rest.step (2.0f, WheelMode::speed, 3, dt) >= 0;
+        for (int i = 0; i < 100; ++i) early += rest.step (2.0f, WheelMode::speed, 3, dt);
         expectEquals (early, 0);
+
+        beginTest ("wheel: every peg passed pulses, however many in one step; a SLICES edit none");
+        {
+            Wheel j;
+            j.step (0, WheelMode::speed, 12, dt);
+            j.a += 5.5 * twoPi / 12;   // a jump over five pegs
+            expectEquals (j.step (0, WheelMode::speed, 12, dt), 5);
+            expectEquals (j.step (0, WheelMode::speed, 24, dt), 0);
+        }
 
         beginTest ("wheel ANGLE: energy turns it -- still energy, still wheel; a switch jumps nothing");
         {
             Wheel a;
             int pegs = 0;
             for (int i = 0; i < 3000; ++i) a.step (0.4f, WheelMode::speed, 12, dt);   // spinning
-            for (int i = 0; i < 3000; ++i) pegs += a.step (0.2f, WheelMode::angle, 12, dt) >= 0;
+            for (int i = 0; i < 3000; ++i) pegs += a.step (0.2f, WheelMode::angle, 12, dt);
             expect (pegs <= 3, "the switch brakes it rather than jumping: " + juce::String (pegs));
             int still = 0;
-            for (int i = 0; i < 2000; ++i) still += a.step (0.2f, WheelMode::angle, 12, dt) >= 0;
+            for (int i = 0; i < 2000; ++i) still += a.step (0.2f, WheelMode::angle, 12, dt);
             expectEquals (still, 0);
             // One turn of energy over 2 s: one peg per slice, then rest.
             int swept = 0;
             for (int i = 0; i < 4000; ++i)
-                swept += a.step (0.2f + (float) std::min (1.0, i * dt / 2), WheelMode::angle, 12, dt) >= 0;
+                swept += a.step (0.2f + (float) std::min (1.0, i * dt / 2), WheelMode::angle, 12, dt);
             expectEquals (swept, 12);
         }
 
