@@ -446,6 +446,10 @@ void Shell::advanceFrame (double seconds)
         if (auto* r = dynamic_cast<RangeRow*> (c))
             r->refresh();
 
+    // The plot and the cables move with engine time: stopped audio or RUN off holds them still.
+    if (shownT <= before)
+        return;
+
     // Keep each view's history with the view: poly voices come and go, and their lines must not
     // jump between them.
     std::array<views::History, maxVoices> next {};
@@ -460,8 +464,7 @@ void Shell::advanceFrame (double seconds)
     histories = next;
     numHistories = snap->numViews;
 
-    const double dt = juce::jlimit (0.0, 0.05, shownT - before);
-    flow += dt * (6 + snap->energy * 70);
+    flow += juce::jlimit (0.0, 0.05, shownT - before) * (6 + snap->energy * 70);
 }
 
 // -- painting ------------------------------------------------------------------------------------
