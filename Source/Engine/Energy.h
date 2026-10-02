@@ -29,7 +29,7 @@ struct EnergySettings
 /** What the non-oscillator sources follow, per chain. */
 struct EnergyInputs
 {
-    float vel  = 0.7f;   // last note-on velocity, 0 after a note-off
+    float vel  = 0;      // last note-on velocity; 0 before any and after a note-off
     float note = 0.5f;   // C2..C7 -> 0..1
     float cc   = 0.5f;
     float audio = 0;     // input RMS, linear

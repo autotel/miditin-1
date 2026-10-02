@@ -77,6 +77,9 @@ void Engine::applyPatch (const Patch& next, juce::MidiBuffer& out)
 {
     const Patch old = patch;
     patch = next;
+    // Under VEL, no note is energy 0: the filters start there, so a note rises out of zero.
+    if (next.enSource == EnergySource::vel && (old.enSource != next.enSource || ! primed))
+        global.lfo.lp = 0;
     if (! primed)
         return;
 
@@ -307,7 +310,8 @@ Chain& Engine::claimVoice (int n, int ch, juce::MidiBuffer& out, int pos)
         v.lfo.ph = global.lfo.ph;
         v.lfo.sh = global.lfo.sh;
     }
-    v.lfo.lp = global.lfo.lp;
+    // Under VEL the voice's own note was off until now, energy 0: its filters rise from there.
+    v.lfo.lp = patch.enSource == EnergySource::vel ? 0.0f : global.lfo.lp;
     v.lfoOff = global.lfoOff;
     if (patch.enRetrig)
         restartLfo (v);

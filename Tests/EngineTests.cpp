@@ -510,6 +510,25 @@ struct EngineTests final : juce::UnitTest
             expectEquals (r.e.sounding(), 0);
         }
 
+        beginTest ("VEL under LPF: the energy rises from zero to the note's velocity");
+        for (auto mode : { VoiceMode::mono, VoiceMode::poly })
+        {
+            Rig r;
+            r.patch.voiceMode = mode;
+            r.patch.enSource = EnergySource::vel;
+            r.patch.enFilter = EnergyFilter::lpf;
+            r.pv[P::enCenter] = 0.5f; r.pv[P::enDepth] = 1;
+            r.pv[P::enFilterAmt] = 0.5f;   // tau 0.77 s
+            r.noteOn (0.5, 60, 127);
+            r.run (0.53);
+            UiSnapshot s;
+            r.e.fillSnapshot (s);
+            expect (s.views[0].energy < 0.1f, "starts from zero");
+            r.run (5.0);
+            r.e.fillSnapshot (s);
+            expectWithinAbsoluteError (s.views[0].energy, 1.0f, 0.02f);
+        }
+
         beginTest ("audio source: input RMS is the energy, mono or stereo");
         for (int channels : { 1, 2 })
         {
