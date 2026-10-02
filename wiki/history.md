@@ -35,3 +35,5 @@ MIDI out, the IN keyboard is a utility.
   under MIDI-in pulse a tie still spans separate key presses, each press being the next step.
 - **Non-note input passes through** (CCs, bend, pressure, programs, sysex) at its own sample
   position, merged with the generated notes; input notes are consumed. Bypass still outputs nothing.
+- **Defaults are input-driven**: `gen = input`, `tfMode = held` -- the wheel paces an arpeggio of
+  the held notes. The factory presets that relied on the old arp/scale defaults now set them.

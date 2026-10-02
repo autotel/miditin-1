@@ -8,7 +8,7 @@
 /** Everything chosen rather than turned: kinds, modes, toggles, the typed arpeggio, the melody
     grid, the pitch-class set. Not automatable (CLAUDE.md). Trivially copyable on purpose -- the
     message thread hands the audio thread whole copies through a `TripleBuffer`. Defaults are the
-    v2 prototype's initial state. */
+    v2 prototype's initial state, except input-driven: an arp of the held notes (wiki/history.md). */
 namespace mdt
 {
 enum class VoiceMode     : uint8_t { mono, poly };
@@ -49,7 +49,7 @@ struct Patch
     std::array<ModMode, 3> modMode { ModMode::scale, ModMode::scale, ModMode::scale };
     int          digBase   = 2;   // 2, 3, 5 or 7
 
-    GenKind      gen       = GenKind::arp;
+    GenKind      gen       = GenKind::input;
     Order        order     = Order::up;
     std::array<int8_t, maxArpTones> arp { 0, 2, 4, 7, 9 };
     int          arpCount  = 5;
@@ -57,7 +57,7 @@ struct Patch
     bool         melTranspose = false;
     RunMode      runMode   = RunMode::free;
 
-    TransformMode tfMode   = TransformMode::scale;
+    TransformMode tfMode   = TransformMode::held;
     int          root      = 9;   // A
     ScaleType    scale     = ScaleType::minor;
     uint16_t     pcs       = (1 << 0) | (1 << 3) | (1 << 5) | (1 << 7) | (1 << 10);

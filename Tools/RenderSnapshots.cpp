@@ -115,12 +115,13 @@ int main (int argc, char** argv)
     const juce::File dir (argc > 1 ? juce::String (argv[1]) : juce::File::getCurrentWorkingDirectory().getFullPathName());
     dir.createDirectory();
 
-    render (dir, "default", [] (FakeHost&) {});
+    render (dir, "default", [] (FakeHost&) {}, { 57, 60, 64 });
     render (dir, "presets", [] (FakeHost&) {}, {}, 0.5, true);
     render (dir, "shaker-poly-melody", [] (FakeHost& h) {
         h.p.pulse = PulseKind::shaker;
         h.p.voiceMode = VoiceMode::poly;
         h.p.gen = GenKind::melody;
+        h.p.tfMode = TransformMode::scale;
         h.p.enFilter = EnergyFilter::lpf;
         h.p.enEdge = EnergyEdge::neg;
     }, { 57, 64 });

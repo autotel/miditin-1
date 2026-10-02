@@ -41,12 +41,13 @@ const std::vector<FactoryPreset>& factoryPresets()
             v.push_back (f);
         };
 
-        // The prototype's opening state.
+        // The defaults: the wheel paces an arpeggio of the held notes.
         add ("Wheel arpeggio", [] (Patch&, ParamValues&) {});
 
         add ("Shaker melody", [] (Patch& p, ParamValues& pv) {
             p.pulse = PulseKind::shaker;
             p.gen = GenKind::melody;
+            p.tfMode = TransformMode::scale;
             p.enShape = Shape::tri;
             pv[P::enRate] = 0.08f;
             pv[P::shBalls] = 4;
@@ -56,6 +57,8 @@ const std::vector<FactoryPreset>& factoryPresets()
         add ("Digital triplets", [] (Patch& p, ParamValues& pv) {
             p.pulse = PulseKind::digital;
             p.digBase = 3;
+            p.gen = GenKind::arp;
+            p.tfMode = TransformMode::scale;
             p.enSync = true;
             p.order = Order::upDown;
             p.scale = ScaleType::dorian;
@@ -69,6 +72,8 @@ const std::vector<FactoryPreset>& factoryPresets()
         add ("MIDI in, held chord", [] (Patch& p, ParamValues& pv) {
             p.pulse = PulseKind::midiIn;
             p.voiceMode = VoiceMode::poly;
+            p.gen = GenKind::arp;
+            p.tfMode = TransformMode::scale;
             p.setArpText ("0 1 2 4");
             p.order = Order::asTyped;
             p.scale = ScaleType::pentMinor;

@@ -30,6 +30,7 @@ struct GenerateTests final : juce::UnitTest
     void runTest() override
     {
         Patch p;
+        p.gen = GenKind::arp;
         p.setArpText ("4 0 -2 7");
 
         beginTest ("orders");

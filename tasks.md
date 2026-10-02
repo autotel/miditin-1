@@ -14,8 +14,6 @@ and one commit per task.
 miditin 1 takes what comes in as MIDI; sending MIDI out is its main function; the IN keyboard is a
 utility. Deviates from the prototype (a self-playing page) -- record each in `wiki/history.md`.
 
-- [sonnet] **Input-driven defaults.** `Patch` defaults `gen = input`, `tfMode = held`: a classic arp
-  of the held notes, paced by the wheel. Fix tests that assumed arp/scale.
 - [sonnet] **Standalone starts SOUND OFF.** Drop `p.preview = wrapperType == wrapperType_Standalone`;
   SOUND stays a toggle, still remembered in state.
 - [opus] **IN keyboard secondary.** Muted relative to OUT: dimmer keys and label, OUT keeps the

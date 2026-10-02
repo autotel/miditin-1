@@ -77,15 +77,18 @@ struct EngineTests final : juce::UnitTest
 
     void runTest() override
     {
-        beginTest ("default patch: wheel pulses play the A minor arpeggio");
+        beginTest ("default patch: wheel pulses arpeggiate the held chord, upwards");
         {
             Rig r;
-            r.noteOn (0, 60);
+            r.noteOn (0, 67); r.noteOn (0, 60); r.noteOn (0, 64);
             r.run (4);
             expect (r.ons() > 5, juce::String (r.ons()));
+            std::vector<int> played;
             for (auto& ev : r.out)
                 if (ev.vel > 0)
-                    expect (ev.note == 69 || ev.note == 72 || ev.note == 76 || ev.note == 81 || ev.note == 84, juce::String (ev.note));
+                    played.push_back (ev.note);
+            for (size_t i = 0; i < played.size(); ++i)
+                expectEquals (played[i], (int[]) { 60, 64, 67 }[i % 3]);
             r.run (2);
             r.patch.run = false;
             r.run (0.1);
