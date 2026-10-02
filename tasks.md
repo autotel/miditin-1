@@ -9,12 +9,6 @@ Source for every phase: `miditin 1 - spec.md` (§ numbers below) and the v2 prot
 Port behaviour from the prototype; do not reinvent it. Each phase ends with `./build.sh test` green
 and one commit per task.
 
-## Shaker trails (author, 2026-10-02)
-
-- [sonnet] **Ball trails show the real path.** The straight velocity line reads as a wire. Each
-  `Ball` keeps its last 8 positions, one every 8 ms (~64 ms, box frame), written by the shaker
-  step; the view draws a fading polyline through them. Nothing else in the snapshot changes.
-
 ## Needs the author
 
 - [author] The manual REAPER pass in `wiki/testing.md` -- needs someone at the screen; agents

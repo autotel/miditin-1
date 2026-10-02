@@ -399,8 +399,15 @@ void drawShaker (juce::Graphics& g, const Frame& f)
             const auto& b = s.views[(size_t) v].balls[(size_t) i];
             const float hf = std::max (0.0f, 1.0f - (float) (s.t - b.hit) / 0.25f);
             const juce::Point<float> q { bx + b.x * S, by + b.y * S };
-            g.setColour (theme::line2);
-            line (g, q, { q.x - b.vx * 0.06f * S, q.y - b.vy * 0.06f * S }, 1);
+            // The path it actually took over the last 150 ms, fading with age.
+            auto prev = q;
+            for (int k = 0; k < b.trailCount; ++k)
+            {
+                const juce::Point<float> p { bx + b.tx[(size_t) k] * S, by + b.ty[(size_t) k] * S };
+                g.setColour (theme::muted.withMultipliedAlpha (0.7f * (1.0f - (float) k / Ball::trailLength)));
+                line (g, prev, p, 1);
+                prev = p;
+            }
             g.setColour (hf > 0 ? theme::accent : (v ? theme::muted : theme::ink));
             disc (g, q, R * S);
         }

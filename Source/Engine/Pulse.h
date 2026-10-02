@@ -63,7 +63,27 @@ struct Wheel
     static constexpr double springW = 12.0;
 };
 
-struct Ball { float x = 0.5f, y = 0.5f, vx = 0, vy = 0, cool = 0; double hit = -9; };
+struct Ball
+{
+    float x = 0.5f, y = 0.5f, vx = 0, vy = 0, cool = 0;
+    double hit = -9;
+    /** The last positions, newest first, one every `trailEvery` ticks: the path it drew. */
+    static constexpr int trailLength = 10, trailEvery = 15;   // 150 ms
+    std::array<float, trailLength> tx {}, ty {};
+    int trailCount = 0;
+
+    void recordTrail() noexcept
+    {
+        for (int i = std::min (trailCount, trailLength - 1); i > 0; --i)
+        {
+            tx[(size_t) i] = tx[(size_t) i - 1];
+            ty[(size_t) i] = ty[(size_t) i - 1];
+        }
+        tx[0] = x;
+        ty[0] = y;
+        trailCount = std::min (trailCount + 1, trailLength);
+    }
+};
 struct WallHit { char wall = 0; float pos = 0, speed = 0; double t = -9; };
 
 struct Shaker
@@ -82,6 +102,7 @@ struct Shaker
     float ampNow = 0;                          // shake amplitude, eased so a jump is no blow
     float baseX = 0, baseY = 0;                // re-bases a mode switch, drifts back to centre
     ShakeMode lastMode = ShakeMode::shake;
+    int trailTick = 0;
 
     /** `agitation` is the energy-modulated core value. SHAKE: it sets how hard a hand shakes the
         box (~4 Hz across, half that up and down). FOLLOW: the box rides it vertically, so only its
@@ -162,6 +183,13 @@ struct Shaker
             if (b.x > 1 - R) { b.x = 1 - R; hit (b, 'r', b.y, std::abs (b.vx)); b.vx = -std::abs (b.vx) * bounce; }
             if (b.y < R)     { b.y = R;     hit (b, 't', b.x, std::abs (b.vy)); b.vy =  std::abs (b.vy) * bounce; }
             if (b.y > 1 - R) { b.y = 1 - R; hit (b, 'b', b.x, std::abs (b.vy)); b.vy = -std::abs (b.vy) * bounce; }
+        }
+
+        if (++trailTick >= Ball::trailEvery)
+        {
+            trailTick = 0;
+            for (int i = 0; i < count; ++i)
+                balls[(size_t) i].recordTrail();
         }
 
         for (int i = 0; i < count; ++i)
