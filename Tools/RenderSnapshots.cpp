@@ -139,5 +139,10 @@ int main (int argc, char** argv)
         h.p.wrap = false;
         h.p.enSource = EnergySource::cc;
     }, { 48, 55, 62 });
+    render (dir, "midiin-clock", [] (FakeHost& h) {
+        h.p.pulse = PulseKind::midiIn;
+        h.p.midiInSource = MidiInSource::clock;
+        h.p.clockDiv = 4;
+    }, { 57, 60, 64 });
     return 0;
 }

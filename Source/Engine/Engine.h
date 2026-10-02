@@ -174,6 +174,8 @@ private:
 
     std::array<int, 128> held {};
     std::array<float, 128> heldVel {};   // beside `held`: each held note's velocity
+    int    clockCount = 0;                 // MIDI clock ticks since the last start
+    double lastClockT = -9;                // engine time of the last 0xF8
     int   numHeld = 0;
     float cc = 0.5f;
     // ponytail: fixed 30 ms RMS window; a knob if it proves too jumpy or too slow.
@@ -208,6 +210,7 @@ private:
     void tick (juce::MidiBuffer& out, int pos, double dClock);
     void stepPulse (Chain&, juce::MidiBuffer& out, int pos, double dClock);
     void pulse (Chain&, float strength, juce::MidiBuffer& out, int pos);
+    bool clockPulses() const noexcept { return patch.run && patch.pulse == PulseKind::midiIn && patch.midiInSource == MidiInSource::clock; }
     void noteOn (int note, float level, int deg, juce::MidiBuffer& out, int pos);
     void noteOff (int note, juce::MidiBuffer& out, int pos);
 };

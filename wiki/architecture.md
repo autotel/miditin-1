@@ -93,3 +93,12 @@ and clamped to 0..1 → 1..127: the chain's energy at the pulse, the pulse stren
 note's velocity — poly the voice's own, mono the latest still-held note (`heldVel` sits beside
 `held`; `in.vel` zeroes on any note-off, as the energy source wants). Defaults 0 / 1 / 0 are the
 old strength-only velocity. A knob is `RangeRow` with `knob = true`.
+
+## MIDI-in CLOCK
+
+`MidiInSource::clock` pulses every running chain each `clockDivTicks[clockDiv]` 0xF8 ticks (0xFA
+restarts the count), at the tick's sample. VST3 has no MIDI clock events -- JUCE's wrapper never
+delivers 0xF8 -- so while none has arrived for 0.5 s the host's PPQ is the clock (transport
+playing only), same grid; a grid point counts when it falls in `[prev, now)`, so beat 0 at a
+transport start pulses once. Real clock bytes reach the Standalone from a MIDI device. Clock
+bytes pass through like any non-note.

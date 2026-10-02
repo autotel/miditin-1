@@ -188,6 +188,15 @@ void Engine::handle (const juce::MidiMessage& m, juce::MidiBuffer& out, int pos)
         releaseHeld (out, pos);
     else if (m.isController() && m.getControllerNumber() == patch.ccNumber)
         cc = (float) m.getControllerValue() / 127.0f;
+    else if (m.isMidiStart())
+        clockCount = 0;
+    else if (m.isMidiClock())
+    {
+        lastClockT = t;
+        const int tick = clockCount++;
+        if (clockPulses() && tick % clockDivTicks[std::clamp (patch.clockDiv, 0, 5)] == 0)
+            forEachRunningChain ([&] (Chain& c) { pulse (c, tick % 24 == 0 ? 1.0f : 0.6f, out, pos); });
+    }
 }
 
 void Engine::inputNoteOn (int n, float vel, juce::MidiBuffer& out, int pos)
@@ -219,7 +228,7 @@ void Engine::inputNoteOn (int n, float vel, juce::MidiBuffer& out, int pos)
     if (patch.runMode == RunMode::resetOnIn)
         global.digital.beat = 0;
 
-    if (patch.pulse == PulseKind::midiIn && patch.run)
+    if (patch.pulse == PulseKind::midiIn && patch.midiInSource == MidiInSource::notes && patch.run)
         pulse (*target, global.in.vel > 0 ? global.in.vel : 0.8f, out, pos);
 }
 
@@ -314,6 +323,18 @@ void Engine::tick (juce::MidiBuffer& out, int pos, double dClock)
         const EnergyInputs gin { global.in.vel, global.in.note, cc, audioLevel };
         global.lfo.step (energySettings, gin, dt, clock, global.lfoOff, global.rng);
         global.energy = global.lfo.val;
+    }
+
+    // CLOCK with no 0xF8 arriving (VST3 delivers none): the host's transport is the clock. A grid
+    // point g pulses when it falls in [prev, now) -- so beat 0 at a transport start counts once.
+    if (clockPulses() && wasPlaying && t - lastClockT > 0.5 && dClock > 0 && dClock < 0.5)
+    {
+        const double k = 24.0 / clockDivTicks[std::clamp (patch.clockDiv, 0, 5)];   // cells a beat
+        if (const double g = std::ceil ((clock - dClock) * k); g < clock * k)
+        {
+            const float strength = std::fmod (g, k) < 0.5 ? 1.0f : 0.6f;   // on the beat
+            forEachRunningChain ([&] (Chain& c) { pulse (c, strength, out, pos); });
+        }
     }
 
     forEachRunningChain ([&] (Chain& c) {

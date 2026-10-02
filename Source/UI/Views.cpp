@@ -456,13 +456,24 @@ void drawDigital (juce::Graphics& g, const Frame& f)
 
 void drawMidiIn (juce::Graphics& g, const Frame& f)
 {
-    const float a = f.dk (f.s->inT, 0.3), cx = CW / 2, cy = CH / 2 + 4;
+    // Under CLOCK the flash is the pulse, not the note.
+    static const char* const divNames[] { "1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32" };
+    const bool clock = f.patch->midiInSource == MidiInSource::clock;
+    const float a = f.dk (clock ? f.s->pulseT : f.s->inT, 0.3), cx = CW / 2, cy = CH / 2 + 4;
     g.setColour (theme::ink);
     ring (g, { cx, cy }, 26, 1.5f);
     g.setColour (theme::accentA (a));
     disc (g, { cx, cy }, 26 * (0.4f + 0.6f * a));
     ring (g, { cx, cy }, 26 + 24 * (1 - a), 1);
-    txt (g, "MIDI IN", cx, cy + 3, theme::ink, 9, 600, juce::Justification::horizontallyCentred);
+    if (clock)
+    {
+        txt (g, "CLOCK", cx, cy - 1, theme::ink, 9, 600, juce::Justification::horizontallyCentred);
+        txt (g, divNames[std::clamp (f.patch->clockDiv, 0, 5)], cx, cy + 10, theme::muted, 8, 400, juce::Justification::horizontallyCentred);
+    }
+    else
+    {
+        txt (g, "MIDI IN", cx, cy + 3, theme::ink, 9, 600, juce::Justification::horizontallyCentred);
+    }
     g.setColour (theme::ink);
     stroke (g, dashed (segment ({ cx, CH }, { cx, cy + 30 }), 3, 3), 1);
 }

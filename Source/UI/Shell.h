@@ -80,6 +80,8 @@ private:
     std::array<std::unique_ptr<RangeRow>, 3> modOffset, modScale;
     BoxButton kickBtn { "" };
     Segmented digBase { { "2", "3", "5", "7" }, 4 };
+    Segmented midiInSource { { "NOTES", "CLOCK" }, 2 };
+    Segmented clockDiv { { "1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32" }, 3 };
     /** What energy is to the generator: wheel SPEED / ANGLE, shaker STRENGTH / POSITION. */
     Segmented energyMode { { "SPEED", "ANGLE" }, 2, fonts::buttonSmall };
     // generate

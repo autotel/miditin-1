@@ -27,6 +27,7 @@ namespace
     const std::array<const char*, 3> edgeNames   { "both", "pos", "neg" };
     const std::array<const char*, 4> pulseNames  { "wheel", "shaker", "digital", "midiIn" };
     const std::array<const char*, 2> wheelNames  { "speed", "angle" };
+    const std::array<const char*, 2> midiInNames { "notes", "clock" };
     const std::array<const char*, 2> shakeNames  { "shake", "follow" };
     const std::array<const char*, 3> genNames    { "arp", "input", "melody" };
     const std::array<const char*, 5> orderNames  { "up", "down", "upDown", "random", "asTyped" };
@@ -91,6 +92,8 @@ juce::XmlElement Patch::toXml() const
     putEnum (x, "wheelMode", wheelMode, wheelNames);
     putEnum (x, "shakeMode", shakeMode, shakeNames);
     x.setAttribute ("digBase", digBase);
+    putEnum (x, "midiInSource", midiInSource, midiInNames);
+    x.setAttribute ("clockDiv", clockDiv);
     putEnum (x, "gen", gen, genNames);
     putEnum (x, "order", order, orderNames);
     x.setAttribute ("arp", arpText());
@@ -130,6 +133,8 @@ Patch Patch::fromXml (const juce::XmlElement& x)
     getEnum (x, "pulse", p.pulse, pulseNames);
     getEnum (x, "wheelMode", p.wheelMode, wheelNames);
     getEnum (x, "shakeMode", p.shakeMode, shakeNames);
+    getEnum (x, "midiInSource", p.midiInSource, midiInNames);
+    p.clockDiv = juce::jlimit (0, 5, x.getIntAttribute ("clockDiv", p.clockDiv));
     const int base = x.getIntAttribute ("digBase", p.digBase);
     if (base == 2 || base == 3 || base == 5 || base == 7)
         p.digBase = base;

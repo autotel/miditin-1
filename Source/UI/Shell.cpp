@@ -12,7 +12,7 @@ namespace
     juce::String feedsText (const Patch& p)
     {
         juce::StringArray f;
-        if (p.pulse == PulseKind::midiIn) f.add ("pulse");
+        if (p.pulse == PulseKind::midiIn && p.midiInSource == MidiInSource::notes) f.add ("pulse");
         if (p.gen == GenKind::input) f.add ("generate");
         if (p.runMode == RunMode::resetOnIn) f.add ("reset");
         if (p.tfMode == TransformMode::held) f.add ("transform");
@@ -77,7 +77,7 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
     row (enAmount, P::enFilterAmt);
 
     // pulse
-    for (juce::Component* c : std::initializer_list<juce::Component*> { &pulseKind, &kickBtn, &digBase, &energyMode }) add (*c);
+    for (juce::Component* c : std::initializer_list<juce::Component*> { &pulseKind, &kickBtn, &digBase, &energyMode, &midiInSource, &clockDiv }) add (*c);
     pulseKind.onChange = [this] (int i) { edit ([i] (Patch& p) { p.pulse = (PulseKind) i; }); };
     row (slices, P::whSlices);
     row (speed, P::whSpeed);
@@ -95,6 +95,9 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
     kickBtn.onClick = [this] { host.kick(); };
     digBase.padY = 3;
     digBase.onChange = [this] (int i) { edit ([i] (Patch& p) { p.digBase = std::array<int, 4> { 2, 3, 5, 7 }[(size_t) i]; }); };
+    midiInSource.padY = clockDiv.padY = 3;
+    midiInSource.onChange = [this] (int i) { edit ([i] (Patch& p) { p.midiInSource = (MidiInSource) i; }); };
+    clockDiv.onChange = [this] (int i) { edit ([i] (Patch& p) { p.clockDiv = i; }); };
     energyMode.padY = 3;
     energyMode.onChange = [this] (int i) { edit ([i] (Patch& p) {
         if (p.pulse == PulseKind::wheel) p.wheelMode = (WheelMode) i;
@@ -213,6 +216,8 @@ void Shell::syncControls()
     pulseKind.setSelected ((int) p.pulse);
     kickBtn.setText (p.pulse == PulseKind::wheel ? fonts::utf8 ("SPIN \xe2\x86\xbb") : fonts::utf8 ("SHAKE \xe2\x87\x84"));
     digBase.setSelected (p.digBase == 2 ? 0 : p.digBase == 3 ? 1 : p.digBase == 5 ? 2 : 3);
+    midiInSource.setSelected ((int) p.midiInSource);
+    clockDiv.setSelected (p.clockDiv);
     const bool wheel = p.pulse == PulseKind::wheel;
     energyMode.setLabels (wheel ? juce::StringArray { "SPEED", "ANGLE" } : juce::StringArray { "STRENGTH", "POSITION" });
     energyMode.setSelected (wheel ? (int) p.wheelMode : (int) p.shakeMode);
@@ -305,6 +310,8 @@ void Shell::layoutControls()
         for (juce::Component* c : std::initializer_list<juce::Component*> { digDiv.get(), swing.get(), &digBase }) show (*c, digital);
         show (kickBtn, wheel || shaker);
         show (energyMode, wheel || shaker);
+        show (midiInSource, none);
+        show (clockDiv, none && p.midiInSource == MidiInSource::clock);
         for (size_t i = 0; i < 3; ++i)
         {
             show (*modOffset[i], (int) p.pulse == (int) i);
@@ -328,6 +335,12 @@ void Shell::layoutControls()
             labelled (st, "BASE", digBase, Segmented::heightFor (1, 3));
             digDiv->setBounds (st.next (rowH));
             swing->setBounds (st.next (rowH));
+        }
+        if (none)
+        {
+            labelled (st, "SOURCE", midiInSource, Segmented::heightFor (1, 3));
+            if (p.midiInSource == MidiInSource::clock)
+                labelled (st, "DIV", clockDiv, Segmented::heightFor (2, 3));
         }
         if (! none)
         {
@@ -531,10 +544,11 @@ void Shell::paint (juce::Graphics& g)
 void Shell::drawModuleTitles (juce::Graphics& g)
 {
     static const char* const titles[] { "ENERGY", "PULSE", "GENERATE", "TRANSFORM" };
-    static const char* const pulseNames[] { "wheel", "shaker", "digital", "none" };
+    static const char* const pulseNames[] { "wheel", "shaker", "digital", "midi notes" };
     static const char* const genNames[] { "arp", "input", "melody" };
     static const char* const tfNames[] { "scale", "set", "held" };
-    const juce::String subs[] { "lfo", pulseNames[(int) patch.pulse], genNames[(int) patch.gen], tfNames[(int) patch.tfMode] };
+    const bool clock = patch.pulse == PulseKind::midiIn && patch.midiInSource == MidiInSource::clock;
+    const juce::String subs[] { "lfo", clock ? "midi clock" : pulseNames[(int) patch.pulse], genNames[(int) patch.gen], tfNames[(int) patch.tfMode] };
     for (int i = 0; i < 4; ++i)
     {
         const float x = (float) (i * colW);

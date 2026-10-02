@@ -131,6 +131,33 @@ struct EngineTests final : juce::UnitTest
             expectWithinAbsoluteError (r.out[1].time - r.out[0].time, 0.18, 0.002);   // gate 180 ms
         }
 
+        beginTest ("MIDI-in CLOCK: a pulse per division of 0xF8 ticks, or of the host's PPQ without them");
+        {
+            Rig r;
+            r.patch.pulse = PulseKind::midiIn;
+            r.patch.midiInSource = MidiInSource::clock;
+            r.patch.clockDiv = 1;   // 1/8: every 12 ticks
+            r.noteOn (0.0, 60);     // a note is no pulse under CLOCK
+            r.at (0.05, juce::MidiMessage::midiStart());
+            for (int i = 0; i < 48; ++i)   // 120 bpm: 24 ticks per 0.5 s
+                r.at (0.1 + i * 0.5 / 24, juce::MidiMessage::midiClock());
+            r.run (1.2);
+            expectEquals (r.ons(), 4);
+            for (auto& ev : r.out) if (ev.vel > 0) expect (ev.time > 0.099);
+
+            Rig h;
+            h.patch.pulse = PulseKind::midiIn;
+            h.patch.midiInSource = MidiInSource::clock;
+            h.patch.clockDiv = 3;   // 1/16
+            h.tr = { true, true, 120, 0 };
+            h.noteOn (0.0, 60);
+            h.run (2.0 - 1e-3);     // four beats, the grid point at beat 4 not yet reached
+            expectEquals (h.ons(), 16);
+            std::vector<int> vels;
+            for (auto& ev : h.out) if (ev.vel > 0) vels.push_back (ev.vel);
+            expect (vels.size() > 4 && vels[0] == 127 && vels[1] < vels[0] && vels[4] == 127);
+        }
+
         beginTest ("melody ties: one note-on held across tied steps, released a gate after the last");
         {
             Rig r;

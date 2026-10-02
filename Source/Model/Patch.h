@@ -20,6 +20,10 @@ enum class EnergyEdge    : uint8_t { both, pos, neg };
 enum class PulseKind     : uint8_t { wheel, shaker, digital, midiIn };
 /** What energy is to the wheel: spin force, or its angle. */
 enum class WheelMode     : uint8_t { speed, angle };
+/** What pulses under MIDI-in: each input note, or a division of the MIDI clock. */
+enum class MidiInSource  : uint8_t { notes, clock };
+/** MIDI clock ticks (24 a quarter) per pulse, for each `Patch::clockDiv`: 1/4 1/8 1/8T 1/16 1/16T 1/32. */
+inline constexpr int clockDivTicks[6] { 24, 12, 8, 6, 4, 3 };
 /** How energy moves the shaker's box: a hand shaking it that hard, or the box riding the curve. */
 enum class ShakeMode     : uint8_t { shake, follow };
 enum class GenKind       : uint8_t { arp, input, melody };
@@ -49,6 +53,8 @@ struct Patch
 
     PulseKind    pulse     = PulseKind::wheel;
     WheelMode    wheelMode = WheelMode::speed;
+    MidiInSource midiInSource = MidiInSource::notes;
+    int          clockDiv  = 3;   // index into clockDivTicks: 1/16
     int          digBase   = 2;   // 2, 3, 5 or 7
     ShakeMode    shakeMode = ShakeMode::shake;
 
