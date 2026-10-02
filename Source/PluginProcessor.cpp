@@ -128,6 +128,8 @@ void MiditinProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     buffer.clear();
     if (audioPatch.preview)
         preview.render (midi, buffer);
+    else
+        preview.reset();
     publishSnapshot();
 }
 
@@ -135,8 +137,15 @@ void MiditinProcessor::processBlockBypassed (juce::AudioBuffer<float>& buffer, j
 {
     buffer.clear();
     midi.clear();
+    // Bypass is deaf as well as mute: input note-offs are not seen while it lasts, so forget the
+    // held notes now rather than keep a released note's poly voice running afterwards.
     if (! std::exchange (bypassed, true))
+    {
         engine.releaseAll (midi, 0);
+        engine.releaseHeld (midi, 0);
+        preview.reset();
+        publishSnapshot();
+    }
 }
 
 void MiditinProcessor::publishSnapshot()

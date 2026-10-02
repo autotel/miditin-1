@@ -49,6 +49,10 @@ stop, bypass and `releaseResources`. A melody tie holds a note with no release t
 owning chain checks the tie is still valid (generator still melody, next step still a tie) and
 releases it otherwise, so an edit can never strand one.
 
+Bypass also forgets the held input notes: it never sees their note-offs, so a poly voice would
+otherwise run on after the key is up. The preview synth is reset whenever it stops hearing the
+MIDI (SOUND off, bypass) for the same reason.
+
 ## Host parameters vs Patch
 
 Host parameters (`ParamRegistry.cpp`) are the prototype's **sliders**: continuous performance

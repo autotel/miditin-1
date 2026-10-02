@@ -11,7 +11,9 @@ namespace mdt
 class PreviewSynth
 {
 public:
-    void prepare (double sampleRate) { sr = sampleRate; voices = {}; }
+    void prepare (double sampleRate) { sr = sampleRate; reset(); }
+    /** Silence, for when it stops hearing the MIDI (SOUND off, bypass) and would miss note-offs. */
+    void reset() { voices = {}; }
 
     void render (const juce::MidiBuffer& midi, juce::AudioBuffer<float>& audio)
     {
