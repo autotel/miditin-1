@@ -46,3 +46,6 @@ MIDI out, the IN keyboard is a utility.
   `POSITION`: the box rides the curve vertically (20 ms smoothing), so only changes stir the balls
   -- a slow sine barely, a square edge throws them. Very high agitation pins balls to the walls
   and the pulse rate dips, as a real box shaken hard does. SHAKE ⇄ is one coherent jolt.
+  A mode switch re-bases the box (its position stays put, the offset drifts home over ~2 s) and
+  the shake amplitude eases in over 20 ms: without that, clicking STRENGTH/POSITION or an S&H
+  jump teleported the box and fired a burst of notes.

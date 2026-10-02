@@ -63,6 +63,9 @@ struct Shaker
         frame, so they feel gravity and minus its acceleration -- the same push for every ball. */
     float boxX = 0, boxY = 0, boxVx = 0, boxVy = 0;
     double shakePh = 0;
+    float ampNow = 0;                          // shake amplitude, eased so a jump is no blow
+    float baseX = 0, baseY = 0;                // re-bases a mode switch, drifts back to centre
+    ShakeMode lastMode = ShakeMode::shake;
 
     /** `agitation` is the energy-modulated core value. SHAKE: it sets how hard a hand shakes the
         box (~4 Hz across, half that up and down). FOLLOW: the box rides it vertically, so only its
@@ -78,20 +81,36 @@ struct Shaker
 
         const float ag = agitation;
         effort = ag;
+        const float ease = (float) (1.0 - std::exp (-dt / followTau));
+        if (mode != lastMode)
+            ampNow = 0;
         float nx = 0, ny;
         if (mode == ShakeMode::shake)
         {
-            const float amp = std::pow (ag, 1.4f);
+            ampNow += (std::pow (ag, 1.4f) - ampNow) * ease;
             shakePh += twoPi * shakeHz * dt;
-            nx = shakeAmp * amp * (float) std::sin (shakePh);
-            ny = 0.6f * shakeAmp * amp * (float) std::sin (0.5 * shakePh + 1.0);
+            nx = shakeAmp * ampNow * (float) std::sin (shakePh);
+            ny = 0.6f * shakeAmp * ampNow * (float) std::sin (0.5 * shakePh + 1.0);
         }
         else
         {
             // Smoothed, so a square edge or an S&H jump is a fast move rather than an infinite one.
             const float target = -followTravel * (ag - 0.5f);
-            ny = boxY + (target - boxY) * (float) (1.0 - std::exp (-dt / followTau));
+            ny = (mode != lastMode ? target : boxY - baseY + (target - (boxY - baseY)) * ease);
         }
+        // A mode switch changes the box's frame of reference, not where it is: take up the
+        // difference in the base, which then drifts home too slowly to push anything.
+        if (mode != lastMode)
+        {
+            baseX = boxX - nx;
+            baseY = boxY - ny;
+            lastMode = mode;
+        }
+        const float home = (float) std::exp (-dt / baseTau);
+        baseX *= home;
+        baseY *= home;
+        nx += baseX;
+        ny += baseY;
         const float vx = (nx - boxX) / (float) dt, vy = (ny - boxY) / (float) dt;
         const float pushX = vx - boxVx, pushY = vy - boxVy;
         boxX = nx; boxY = ny; boxVx = vx; boxVy = vy;
@@ -158,7 +177,7 @@ struct Shaker
 
     // ponytail: hand-tuned feel constants; knobs if one setting cannot serve every patch.
     static constexpr float  gravity = 2.6f, shakeAmp = 0.08f, followTravel = 0.5f;
-    static constexpr double shakeHz = 4.0, followTau = 0.02;
+    static constexpr double shakeHz = 4.0, followTau = 0.02, baseTau = 2.0;
 };
 
 struct Digital

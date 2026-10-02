@@ -59,6 +59,24 @@ struct PulseTests final : juce::UnitTest
             expect (std::any_of (sq.begin(), sq.end(), [edge] (double t) { return t >= edge && t < edge + 0.1; }),
                     "edge at " + juce::String (edge));
 
+        beginTest ("shaker: a mode switch or an energy jump moves no ball by itself");
+        {
+            // Balls at rest on the floor, then the box changes frame (mode) or amplitude (S&H jump).
+            for (int scenario = 0; scenario < 2; ++scenario)
+            {
+                Shaker s; Rng r (7);
+                int burst = 0;
+                for (int i = 0; i < 8000; ++i)
+                {
+                    const bool after = i >= 6000;
+                    const auto mode = scenario == 0 && after ? ShakeMode::follow : ShakeMode::shake;
+                    const float ag = scenario == 0 ? (after ? 1.5f : 0.0f) : (after ? 0.4f : 0.0f);
+                    s.step (ag, mode, 5, 0.82f, i * dt, dt, r, [&] (float) { burst += i >= 6000 && i < 6030; });
+                }
+                expectEquals (burst, 0, "scenario " + juce::String (scenario));
+            }
+        }
+
         beginTest ("digital: base x 2^k pulses per bar, downbeats stronger");
         for (int base : { 2, 3, 5, 7 })
             for (int k = 0; k < 5; ++k)
