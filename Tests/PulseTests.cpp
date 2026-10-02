@@ -14,9 +14,13 @@ struct PulseTests final : juce::UnitTest
         beginTest ("energy modulation: scale and offset modes");
         EnergyMod m;
         expectWithinAbsoluteError (m.apply (0.5f, 0.7f, 2, 0, 3), 0.35f, 1e-6f);
-        m.mode = ModMode::offset; m.offset = -0.5f; m.scale = 2;
-        expectWithinAbsoluteError (m.apply (0.75f, 0.7f, 2, 0, 3), 0.7f + 1.0f * 2, 1e-6f);
-        expectWithinAbsoluteError (m.apply (0.0f, 0.7f, 2, 0, 3), 0.0f, 1e-6f);   // clamped
+        m.mode = ModMode::offset;
+        expectWithinAbsoluteError (m.apply (0.5f, 0.7f, 1, 0, 3), 0.7f, 1e-6f);          // mid energy: the slider
+        expectWithinAbsoluteError (m.apply (1.0f, 0.7f, 1, 0, 3), 1.2f, 1e-6f);          // default swing +-0.5
+        expectWithinAbsoluteError (m.apply (0.0f, 0.7f, 1, 0, 3), 0.2f, 1e-6f);
+        m.offset = -0.5f; m.scale = 2;
+        expectWithinAbsoluteError (m.apply (0.75f, 0.7f, 1, 0, 3), 0.7f, 1e-6f);
+        expectWithinAbsoluteError (m.apply (0.0f, 0.7f, 1, 0, 3), 0.0f, 1e-6f);          // clamped
 
         beginTest ("wheel: at speed, slices x rev/s pulses per second, stronger when faster");
         Wheel w;

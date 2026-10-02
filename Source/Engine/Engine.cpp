@@ -346,7 +346,7 @@ void Engine::stepPulse (Chain& c, juce::MidiBuffer& out, int pos, double dClock)
         case PulseKind::wheel:
         {
             const EnergyMod m { patch.modMode[0], pv[P::whModOffset], pv[P::whModScale] };
-            const float s = c.wheel.step (m.apply (c.energy, pv[P::whSpeed], 2, 0, 3), pv.i (P::whSlices), dt);
+            const float s = c.wheel.step (m.apply (c.energy, pv[P::whSpeed], 1, 0, 3), pv.i (P::whSlices), dt);
             if (s >= 0) pulse (c, s, out, pos);
             break;
         }

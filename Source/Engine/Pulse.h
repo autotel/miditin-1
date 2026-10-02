@@ -9,7 +9,9 @@
     the prototype's `chainStep`. */
 namespace mdt
 {
-/** m = offset + scale * energy, then the core parameter is scaled by m or offset by m * range. */
+/** m = offset + scale * energy, then the core parameter is scaled by m, or offset by m * range.
+    Offset mode centres the energy (energy - 0.5), so the slider is the middle of the swing: with
+    energy 0..1 as is (spec §4, the prototype) it only ever added, and the wheel ran flat out. */
 struct EnergyMod
 {
     ModMode mode = ModMode::scale;
@@ -17,8 +19,9 @@ struct EnergyMod
 
     float apply (float energy, float base, float range, float lo, float hi) const noexcept
     {
-        const float m = offset + scale * energy;
-        return std::clamp (mode == ModMode::offset ? base + m * range : base * m, lo, hi);
+        if (mode == ModMode::offset)
+            return std::clamp (base + (offset + scale * (energy - 0.5f)) * range, lo, hi);
+        return std::clamp (base * (offset + scale * energy), lo, hi);
     }
 };
 
