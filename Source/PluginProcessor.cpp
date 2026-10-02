@@ -28,7 +28,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
 } // namespace
 
 MiditinProcessor::MiditinProcessor()
-    : juce::AudioProcessor (BusesProperties().withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
+    : juce::AudioProcessor (BusesProperties().withInput ("Input", juce::AudioChannelSet::stereo(), true)
+                                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       apvts (*this, nullptr, "Params", createLayout())
 {
     for (int i = 0; i < numParams; ++i)
@@ -75,14 +76,15 @@ void MiditinProcessor::releaseResources() {}
 
 bool MiditinProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-    return layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo();
+    const auto in = layouts.getMainInputChannelSet();   // the AUDIO energy source's input
+    return layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo()
+        && (in.isDisabled() || in == juce::AudioChannelSet::mono() || in == juce::AudioChannelSet::stereo());
 }
 
 void MiditinProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     const juce::ScopedNoDenormals noDenormals;
     const int n = buffer.getNumSamples();
-    buffer.clear();
     bypassed = false;
 
     if (patches.fetch())
@@ -121,7 +123,9 @@ void MiditinProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
         }
     });
 
-    engine.process (audioPatch, pv, tr, input, midi, n);
+    // The input is only measured (AUDIO energy source); nothing passes through.
+    engine.process (audioPatch, pv, tr, input, midi, n, buffer.getArrayOfReadPointers(), getTotalNumInputChannels());
+    buffer.clear();
     if (audioPatch.preview)
         preview.render (midi, buffer);
     publishSnapshot();

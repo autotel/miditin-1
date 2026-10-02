@@ -65,7 +65,7 @@ private:
     juce::Component* presetPanel = nullptr;
     std::unique_ptr<RangeRow> bpm;
     // energy
-    Segmented enSource { { "OSC", "VEL", "NOTE", "CC" }, 4 };
+    Segmented enSource { { "OSC", "VEL", "NOTE", "CC", "AUDIO" }, 5, fonts::buttonSmall };
     Segmented enShape { { "SIN", "TRI", "SAW", "S&H" }, 4 };
     BoxButton syncBtn { "SYNC" }, retrigBtn { "RETRIG" };
     std::unique_ptr<RangeRow> ccNumber, enAmount;

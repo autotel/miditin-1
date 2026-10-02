@@ -98,9 +98,11 @@ public:
     /** Resets everything, including the random seeds. */
     void prepare (double sampleRate);
 
-    /** `in` and `out` must be different buffers. `out` receives only generated notes. */
+    /** `in` and `out` must be different buffers. `out` receives only generated notes. `audio`
+        (`audioChannels` channels of `numSamples`) feeds the AUDIO energy source; none = silence. */
     void process (const Patch&, const ParamValues&, const Transport&,
-                  const juce::MidiBuffer& in, juce::MidiBuffer& out, int numSamples);
+                  const juce::MidiBuffer& in, juce::MidiBuffer& out, int numSamples,
+                  const float* const* audio = nullptr, int audioChannels = 0);
 
     /** Every sounding output note off, now. Bypass, `releaseResources`, transport stop. */
     void releaseAll (juce::MidiBuffer& out, int samplePos);
@@ -134,6 +136,10 @@ private:
     std::array<int, 128> held {};
     int   numHeld = 0;
     float cc = 0.5f;
+    // ponytail: fixed 30 ms RMS window; a knob if it proves too jumpy or too slow.
+    static constexpr double rmsTau = 0.030;
+    double meanSquare = 0, msCoef = 0;
+    float  audioLevel = 0;
     ToneSeq polySeq, monoSeq;
     Pool  pool;
 

@@ -292,7 +292,8 @@ void drawEnergy (juce::Graphics& g, const Frame& f)
     txt (g, juce::String (val, 2) + (s.numViews > 1 ? fonts::utf8 ("  \xc3\x97") + juce::String (s.numViews) : juce::String()),
          0, CH - 2, theme::ink, 8, 600);
     juce::String src = p.enSource == EnergySource::osc ? "" : p.enSource == EnergySource::vel ? "in vel"
-                     : p.enSource == EnergySource::note ? "in note" : "cc" + juce::String (p.ccNumber);
+                     : p.enSource == EnergySource::note ? "in note" : p.enSource == EnergySource::audio ? "audio"
+                     : "cc" + juce::String (p.ccNumber);
     if (p.enFilter != EnergyFilter::off)
         src += juce::String (p.enFilter == EnergyFilter::lpf ? " lpf" : " hpf")
              + (p.enEdge == EnergyEdge::pos ? "+" : p.enEdge == EnergyEdge::neg ? "-" : "");

@@ -248,6 +248,34 @@ struct EngineTests final : juce::UnitTest
             expectEquals (s.heldCount, 2);
             expect (s.poly);
         }
+
+        beginTest ("audio source: input RMS is the energy, mono or stereo");
+        for (int channels : { 1, 2 })
+        {
+            Engine e;
+            e.prepare (48000);
+            Patch p; p.enSource = EnergySource::audio;
+            ParamValues pv = ParamValues::defaults();
+            pv[P::enCenter] = 0.5f; pv[P::enDepth] = 1;
+            juce::AudioBuffer<float> audio (channels, 480);
+            juce::MidiBuffer in, o;
+            UiSnapshot s;
+            double phase = 0;
+            auto run = [&] (double seconds, float amp) {
+                for (int b = 0; b < (int) std::round (seconds * 100); ++b)
+                {
+                    for (int i = 0; i < 480; ++i, phase += 440.0 / 48000)
+                        for (int ch = 0; ch < channels; ++ch)
+                            audio.setSample (ch, i, amp * (float) std::sin (6.283185307179586 * phase));
+                    o.clear();
+                    e.process (p, pv, {}, in, o, 480, audio.getArrayOfReadPointers(), channels);
+                }
+                e.fillSnapshot (s);
+                return s.views[0].energy;
+            };
+            expectWithinAbsoluteError (run (0.2, 0.5f), 0.5f / std::sqrt (2.0f), 0.02f);
+            expectWithinAbsoluteError (run (0.3, 0), 0.0f, 0.01f);
+        }
     }
 };
 

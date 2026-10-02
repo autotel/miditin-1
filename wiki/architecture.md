@@ -63,6 +63,11 @@ are routing; automating them mid-note is how notes hang. This keeps the rule one
 - **One-sided filter** (`Patch::enEdge`): the energy smoother snaps instead of smoothing on the
   unselected edge, so one switch serves both filters — LPF `- ONLY` = instant onset, slow release;
   HPF `+ ONLY` = only rises register.
+- **AUDIO source**: an optional mono/stereo input bus is measured, never passed through. The
+  engine tracks mean square per sample (30 ms one-pole, channels averaged) and each tick reads
+  `sqrt` of it, linear, as the energy input — one level shared by every chain. The one exception to
+  "same MIDI at any sample rate": block-size independent, not bit-identical across rates. The
+  JUCE Standalone mutes its input by default (feedback guard) — untick it in the audio settings.
 
 ## UI
 

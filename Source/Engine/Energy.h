@@ -31,6 +31,7 @@ struct EnergyInputs
     float vel  = 0.7f;   // last note-on velocity, 0 after a note-off
     float note = 0.5f;   // C2..C7 -> 0..1
     float cc   = 0.5f;
+    float audio = 0;     // input RMS, linear
 };
 
 struct Lfo
@@ -62,6 +63,7 @@ struct Lfo
             case EnergySource::vel:  l = in.vel; break;
             case EnergySource::note: l = in.note; break;
             case EnergySource::cc:   l = in.cc; break;
+            case EnergySource::audio: l = in.audio; break;
             case EnergySource::osc:
                 l = s.shape == Shape::sine ? 0.5f - 0.5f * (float) std::cos (twoPi * p)
                   : s.shape == Shape::tri  ? (p < 0.5f ? 2 * p : 2 - 2 * p)

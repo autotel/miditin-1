@@ -15,6 +15,7 @@ void Engine::prepare (double sr)
     patch = keepPatch;
     sampleRate = sr;
     samplesPerTick = sr / tickRate;
+    msCoef = 1.0 - std::exp (-1.0 / (rmsTau * sr));
     seeder = Rng (0x2545f491u);
     global.rng = Rng (seeder.next());
     global.in = {};
@@ -102,7 +103,8 @@ void Engine::applyPatch (const Patch& next, juce::MidiBuffer& out)
 // -- block -----------------------------------------------------------------------------------------
 
 void Engine::process (const Patch& nextPatch, const ParamValues& values, const Transport& tr,
-                      const juce::MidiBuffer& in, juce::MidiBuffer& out, int numSamples)
+                      const juce::MidiBuffer& in, juce::MidiBuffer& out, int numSamples,
+                      const float* const* audio, int audioChannels)
 {
     pv = values;
     applyPatch (nextPatch, out);
@@ -133,10 +135,24 @@ void Engine::process (const Patch& nextPatch, const ParamValues& values, const T
     }
     wasPlaying = playing;
 
+    // Input RMS, per sample, read by the AUDIO energy source at each tick.
+    int audioPos = 0;
+    auto followAudio = [&] (int upTo) {
+        for (; audioPos < upTo; ++audioPos)
+        {
+            float sq = 0;
+            for (int ch = 0; ch < audioChannels; ++ch)
+                sq += audio[ch][audioPos] * audio[ch][audioPos];
+            meanSquare += ((audioChannels > 0 ? sq / (float) audioChannels : 0.0f) - meanSquare) * msCoef;
+        }
+        audioLevel = std::clamp ((float) std::sqrt (meanSquare), 0.0f, 1.0f);
+    };
+
     auto it = in.begin();
     for (; nextTick < numSamples; nextTick += samplesPerTick)
     {
         const int pos = (int) nextTick;
+        followAudio (pos);
         for (; it != in.end() && (*it).samplePosition <= pos; ++it)
             handle ((*it).getMessage(), out, (*it).samplePosition);
 
@@ -149,6 +165,7 @@ void Engine::process (const Patch& nextPatch, const ParamValues& values, const T
     }
     for (; it != in.end(); ++it)
         handle ((*it).getMessage(), out, (*it).samplePosition);
+    followAudio (numSamples);
     nextTick -= numSamples;
     ++serial;
 }
@@ -279,13 +296,13 @@ void Engine::tick (juce::MidiBuffer& out, int pos, double dClock)
     // when no voice is held.
     if (poly())
     {
-        const EnergyInputs gin { global.in.vel, global.in.note, cc };
+        const EnergyInputs gin { global.in.vel, global.in.note, cc, audioLevel };
         global.lfo.step (energySettings, gin, dt, clock, global.lfoOff, global.rng);
         global.energy = global.lfo.val;
     }
 
     forEachRunningChain ([&] (Chain& c) {
-        const EnergyInputs cin { c.in.vel, c.in.note, cc };
+        const EnergyInputs cin { c.in.vel, c.in.note, cc, audioLevel };
         c.lfo.step (energySettings, cin, dt, clock, c.lfoOff, c.rng);
         c.energy = c.lfo.val;
         stepPulse (c, out, pos, dClock);
