@@ -9,6 +9,14 @@ Source for every phase: `miditin 1 - spec.md` (§ numbers below) and the v2 prot
 Port behaviour from the prototype; do not reinvent it. Each phase ends with `./build.sh test` green
 and one commit per task.
 
+## Window (author, 2026-10-02)
+
+- [sonnet] **Resizable window.** Fixed 3:2 aspect, 75 %..250 % of 900 x 600, corner resizer. The
+  shell keeps its 900 x 600 layout; one `AffineTransform::scale` carries it to the window
+  (mepSynth's `resized()`, minus its variable width). The width lives in the processor beside
+  `openPresetName` and in the saved state, so a reopened editor comes back at its size. Check the
+  snapshot tool still renders at 1x.
+
 ## Needs the author
 
 - [author] The manual REAPER pass in `wiki/testing.md` -- needs someone at the screen; agents
