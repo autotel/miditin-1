@@ -14,12 +14,6 @@ and one commit per task.
 miditin 1 takes what comes in as MIDI; sending MIDI out is its main function; the IN keyboard is a
 utility. Deviates from the prototype (a self-playing page) -- record each in `wiki/history.md`.
 
-- [opus] **Silent until input.** Mono: the chain pulses only while `numHeld > 0`; the physics keep
-  moving so the display stays alive, but `Engine::pulse` returns before advancing the generator.
-  When the last input note lifts, a melody tie releases (tick's tie check) -- gates finish on
-  their own. Poly already is (voices exist only per held note); check the global chain never
-  pulses. Update every engine test that renders without input to hold a note; add one: no note-on
-  with nothing held, for each pulse kind.
 - [sonnet] **Pass through non-notes.** Every input message that is not a note-on/off goes to the
   output at its own sample position, in `Engine::process` (testable), CC energy source included.
   Note-ons/offs stay consumed. Test: CC, pitch bend, channel pressure, program change come out

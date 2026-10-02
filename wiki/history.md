@@ -24,3 +24,12 @@ One entry per reversal: what was tried, why it went, what replaced it. Newest la
   arrives as MIDI.
 - **A melody step whose tone maps outside 0..127** clears the chain's held note instead of letting a
   following tie extend an older one.
+
+## MIDI processor (author, 2026-10-02)
+
+The prototype is a page that plays by itself; the plugin is a MIDI processor -- MIDI in shapes
+MIDI out, the IN keyboard is a utility.
+
+- **Silent until input**: no pulse reaches the generator while no input note is held (the physics
+  keep moving for the display). Lifting the last key releases a self-running pulse's melody tie;
+  under MIDI-in pulse a tie still spans separate key presses, each press being the next step.

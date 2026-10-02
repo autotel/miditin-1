@@ -80,6 +80,7 @@ struct EngineTests final : juce::UnitTest
         beginTest ("default patch: wheel pulses play the A minor arpeggio");
         {
             Rig r;
+            r.noteOn (0, 60);
             r.run (4);
             expect (r.ons() > 5, juce::String (r.ons()));
             for (auto& ev : r.out)
@@ -138,6 +139,44 @@ struct EngineTests final : juce::UnitTest
             expectEquals (r.ons(), 1);
             expect (r.balanced());
             expectWithinAbsoluteError (r.out.back().time, 2.1 + 0.18, 0.002);
+        }
+
+        beginTest ("silent until input: no note-on while nothing is held, any pulse, mono or poly");
+        for (int k = 0; k < 4; ++k)
+            for (auto vm : { VoiceMode::mono, VoiceMode::poly })
+            {
+                Rig r;
+                r.patch.pulse = (PulseKind) k;
+                r.patch.voiceMode = vm;
+                r.pv[P::shAgitate] = 1;
+                r.tr = { true, true, 120, 0 };
+                r.run (3);
+                expectEquals (r.ons(), 0, "pulse kind " + juce::String (k));
+                r.noteOn (r.now, 64);
+                r.noteOff (r.now + 1.5, 64);
+                r.run (2);
+                const int during = r.ons();
+                expect (k == 3 ? during == 1 : during > 0, "pulse kind " + juce::String (k));
+                r.run (3);
+                expectEquals (r.ons(), during, "pulse kind " + juce::String (k));
+                expect (r.balanced());
+            }
+
+        beginTest ("a self-running tie is released when the last input note lifts");
+        {
+            Rig r;
+            r.patch.pulse = PulseKind::digital;
+            r.pv[P::enDepth] = 0;
+            r.patch.gen = GenKind::melody;
+            r.patch.melody.fill (melTie);
+            r.patch.melody[0] = 0;
+            r.noteOn (0.1, 40);
+            r.noteOff (1.2, 40);
+            r.run (1.15);
+            expectEquals (r.e.sounding(), 1);
+            r.run (0.1);
+            expectEquals (r.e.sounding(), 0);
+            expect (r.balanced());
         }
 
         beginTest ("a tie broken by an edit is released, not stranded");
@@ -211,6 +250,7 @@ struct EngineTests final : juce::UnitTest
             r.pv[P::dgDiv] = 2;               // energy 0.5 x 2 -> row 1: quarter notes
             r.pv[P::enDepth] = 0;
             r.tr = { true, true, 120, 0.0 };  // 0.5 s per beat
+            r.noteOn (0, 60);
             r.run (2.05);
             std::vector<double> times;
             for (auto& ev : r.out) if (ev.vel > 0) times.push_back (ev.time);

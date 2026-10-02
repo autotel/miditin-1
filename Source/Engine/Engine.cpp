@@ -310,11 +310,13 @@ void Engine::tick (juce::MidiBuffer& out, int pos, double dClock)
         stepPulse (c, out, pos, dClock);
 
         // A tie holds its note only while the next step still continues it. An edit to the grid,
-        // its length or the generator kind can break that; release then rather than strand it.
+        // its length or the generator kind can break that; so does lifting the last key, which
+        // stops a self-running pulse -- under MIDI-in the next key press is the next step.
         if (c.melNote >= 0)
         {
             auto& s = notes[(size_t) c.melNote];
-            if (s.on && s.until >= holdForever && ! c.gen.nextIsTie (patch, pv.i (P::melLength)))
+            const bool stopped = numHeld == 0 && patch.pulse != PulseKind::midiIn;
+            if (s.on && s.until >= holdForever && (stopped || ! c.gen.nextIsTie (patch, pv.i (P::melLength))))
                 s.until = t;
         }
     });
@@ -361,6 +363,10 @@ void Engine::stepPulse (Chain& c, juce::MidiBuffer& out, int pos, double dClock)
 
 void Engine::pulse (Chain& c, float strength, juce::MidiBuffer& out, int pos)
 {
+    // A MIDI processor: nothing comes out until something comes in. The physics keep moving for
+    // the display; only the generator waits. Poly voices exist only while their note is held.
+    if (numHeld == 0)
+        return;
     if (t - c.lastPulseT < minPulseGap)
         return;
     c.lastPulseT = t;
