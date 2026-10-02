@@ -33,3 +33,5 @@ MIDI out, the IN keyboard is a utility.
 - **Silent until input**: no pulse reaches the generator while no input note is held (the physics
   keep moving for the display). Lifting the last key releases a self-running pulse's melody tie;
   under MIDI-in pulse a tie still spans separate key presses, each press being the next step.
+- **Non-note input passes through** (CCs, bend, pressure, programs, sysex) at its own sample
+  position, merged with the generated notes; input notes are consumed. Bypass still outputs nothing.

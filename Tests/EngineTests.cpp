@@ -162,6 +162,33 @@ struct EngineTests final : juce::UnitTest
                 expect (r.balanced());
             }
 
+        beginTest ("non-note input passes through at its position; input notes do not");
+        {
+            Rig r;
+            r.patch.pulse = PulseKind::midiIn;
+            r.patch.enSource = EnergySource::cc;
+            const juce::MidiMessage pass[] { juce::MidiMessage::controllerEvent (2, 1, 90),
+                                             juce::MidiMessage::pitchWheel (3, 9000),
+                                             juce::MidiMessage::channelPressureChange (1, 40),
+                                             juce::MidiMessage::programChange (5, 7) };
+            juce::MidiBuffer in, o;
+            int pos = 10;
+            for (auto& m : pass) in.addEvent (m, pos += 20);
+            in.addEvent (juce::MidiMessage::noteOn (1, 64, 0.5f), 5);
+            r.e.process (r.patch, r.pv, r.tr, in, o, 256);
+            int i = 0, notesOut = 0;
+            for (const auto md : o)
+            {
+                const auto m = md.getMessage();
+                if (m.isNoteOnOrOff()) { ++notesOut; expect (m.getChannel() == 1); continue; }
+                expect (i < 4 && m.getRawDataSize() == pass[i].getRawDataSize()
+                        && std::memcmp (m.getRawData(), pass[i].getRawData(), (size_t) m.getRawDataSize()) == 0);
+                expectEquals (md.samplePosition, 30 + 20 * i++);
+            }
+            expectEquals (i, 4);
+            expectEquals (notesOut, 1);   // the generated note, not the input one
+        }
+
         beginTest ("a self-running tie is released when the last input note lifts");
         {
             Rig r;

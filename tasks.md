@@ -14,10 +14,6 @@ and one commit per task.
 miditin 1 takes what comes in as MIDI; sending MIDI out is its main function; the IN keyboard is a
 utility. Deviates from the prototype (a self-playing page) -- record each in `wiki/history.md`.
 
-- [sonnet] **Pass through non-notes.** Every input message that is not a note-on/off goes to the
-  output at its own sample position, in `Engine::process` (testable), CC energy source included.
-  Note-ons/offs stay consumed. Test: CC, pitch bend, channel pressure, program change come out
-  unchanged; input notes do not.
 - [sonnet] **Input-driven defaults.** `Patch` defaults `gen = input`, `tfMode = held`: a classic arp
   of the held notes, paced by the wheel. Fix tests that assumed arp/scale.
 - [sonnet] **Standalone starts SOUND OFF.** Drop `p.preview = wrapperType == wrapperType_Standalone`;

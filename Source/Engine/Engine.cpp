@@ -176,6 +176,10 @@ void Engine::process (const Patch& nextPatch, const ParamValues& values, const T
 
 void Engine::handle (const juce::MidiMessage& m, juce::MidiBuffer& out, int pos)
 {
+    // Notes are consumed; everything else (CCs, bend, pressure, programs, sysex) passes through.
+    if (! m.isNoteOnOrOff())
+        out.addEvent (m, pos);
+
     if (m.isNoteOn())
         inputNoteOn (m.getNoteNumber(), m.getFloatVelocity(), out, pos);
     else if (m.isNoteOff())
