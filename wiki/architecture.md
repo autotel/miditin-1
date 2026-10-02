@@ -77,7 +77,7 @@ are routing; automating them mid-note is how notes hang. This keeps the rule one
 
 The editor animates from the latest `UiSnapshot` at its frame rate and keeps its own short
 histories (energy plot) from successive snapshots. Closing it changes no MIDI.
-The shell is laid out once at 900 x 600; the editor resizes at a fixed 3:2 and scales the shell
+The shell is laid out once at 900 x 570; the editor resizes at the design aspect and scales the shell
 with one transform. The processor keeps the width (and saves it), since the editor dies on close.
 
 ## Output velocity

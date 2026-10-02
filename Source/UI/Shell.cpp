@@ -383,11 +383,12 @@ void Shell::layoutControls()
         const int y = bottomTop + 48 + (int) views::KH + 7;
         releaseBtn.setBounds (450 - pad - 80, y, 80, buttonH);
         inHeldArea = juce::Rectangle<float> ((float) pad, (float) y, 450.0f - 2 * pad - 88, (float) buttonH);
-        gate->setBounds (450 + pad, y + 3, 30 + 6 + 70 + 6 + 40, rowH);
-        logArea = juce::Rectangle<float> (450.0f + pad + 160, (float) y, 450.0f - 2 * pad - 160, (float) buttonH);
+        logArea = juce::Rectangle<float> (450.0f + pad, (float) y, 450.0f - 2 * pad, (float) buttonH);
 
-        // VELOCITY: three knobs in the free strip under OUT.
-        const int ky = y + buttonH + 8, kh = 26;
+        // GATE and VELOCITY: what shapes the output, just above the OUT title, under the
+        // GENERATE / TRANSFORM controls (which end well above it).
+        const int kh = 26, ky = bottomTop - 4 - kh, gy = ky - 6 - rowH;
+        gate->setBounds (450 + pad, gy, 30 + 6 + 70 + 6 + 40, rowH);
         velArea = juce::Rectangle<float> (450.0f + pad, (float) ky, 70, (float) kh);
         for (int i = 0; i < 3; ++i)
             vel[(size_t) i]->setBounds (450 + pad + 70 + i * 110, ky, 100, kh);

@@ -11,11 +11,6 @@ and one commit per task.
 
 ## Layout, melody, animation (author, 2026-10-02)
 
-- [sonnet] **GATE + VELOCITY above the OUT keyboard.** Move both rows from under OUT into the right
-  half (GENERATE / TRANSFORM columns), between those columns' controls and the IN/OUT band; the
-  OUT title and keyboard sit below them. Shorten the GENERATE and TRANSFORM control stacks'
-  reserved height so the rows fit without growing the window. Recent-notes log stays under OUT.
-  Check with `MiditinSnap`.
 - [opus] **Smoother animation.** Measure first: paint time per frame (snapshot tool, timed), the
   editor timer's real rate, and snapshot cadence (one per block -- at 1024+ samples that is under
   50 Hz). Then fix the dominant cause: e.g. timer driven by `juce::VBlankAttachment`, cheaper

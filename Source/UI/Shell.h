@@ -3,7 +3,7 @@
 #include "Controls.h"
 #include "Views.h"
 
-/** The whole 900 x 600 window, laid out as the v2 prototype: a header, four modules left to right
+/** The whole 900 x 570 window, laid out as the v2 prototype: a header, four modules left to right
     (ENERGY, PULSE, GENERATE, TRANSFORM) with their animations and controls, the IN and OUT
     keyboards along the bottom, and the connections drawn between the animations.
 
@@ -14,7 +14,7 @@ namespace mdt
 class Shell : public juce::Component, private juce::Timer
 {
 public:
-    static constexpr int width = 900, height = 600;
+    static constexpr int width = 900, height = 570;
 
     explicit Shell (Host&);
     ~Shell() override;

@@ -67,8 +67,9 @@ MiditinEditor::MiditinEditor (MiditinProcessor& p)
     setWantsKeyboardFocus (true);
     addAndMakeVisible (shell);
 
-    // Fixed 3:2, 75 %..250 %. After the shell, so the corner resizer sits on top of it.
-    setResizeLimits (675, 450, 2250, 1500);
+    // The design aspect, 75 %..250 %. After the shell, so the corner resizer sits on top of it.
+    using mdt::Shell;
+    setResizeLimits (Shell::width * 3 / 4, Shell::height * 3 / 4, Shell::width * 5 / 2, Shell::height * 5 / 2);
     getConstrainer()->setFixedAspectRatio ((double) mdt::Shell::width / mdt::Shell::height);
     setResizable (true, true);
     setSize (proc.editorWidth, proc.editorWidth * mdt::Shell::height / mdt::Shell::width);
@@ -76,7 +77,7 @@ MiditinEditor::MiditinEditor (MiditinProcessor& p)
 
 void MiditinEditor::resized()
 {
-    // The layout is always built at 900 x 600; one transform carries it to the window.
+    // The layout is always built at the design size; one transform carries it to the window.
     shell.setTransform (juce::AffineTransform::scale ((float) getWidth() / mdt::Shell::width));
     shell.setBounds (0, 0, mdt::Shell::width, mdt::Shell::height);
     proc.editorWidth = getWidth();
