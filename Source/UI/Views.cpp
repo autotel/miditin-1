@@ -179,12 +179,15 @@ Anchors anchorsFor (const Frame& f)
         case PulseKind::wheel:   a.pTop = { CW / 2 - 12, CH / 2 - 2 }; a.pOut = { CW / 2 - 12 + CH / 2 - 12 + 13, CH / 2 - 2 }; break;
         case PulseKind::shaker:  a.pTop = { CW / 2, 2 + (CH - 4) / 2 }; a.pOut = { (CW + CH - 4) / 2, 2 + (CH - 4) / 2 }; break;
         case PulseKind::digital: a.pTop = { (30 + CW - 4) / 2, 14 + (CH - 14) / 5 * 2.5f }; a.pOut = { CW, 14 + (CH - 14) / 5 * 2.5f }; break;
-        case PulseKind::midiIn:  a.pTop = { CW / 2, CH / 2 + 4 }; a.pOut = { CW / 2 + 26, CH / 2 + 4 }; break;
+        // The circle's edge: its centre is the label.
+        case PulseKind::midiIn:  a.pTop = { CW / 2 - 26, CH / 2 + 4 }; a.pOut = { CW / 2 + 26, CH / 2 + 4 }; break;
     }
+    // Cables end where a drawing has a centre to reach (wheel hub, box, arp ring, tone wheel), and
+    // at the edge where it has none (the MIDI-in label, the melody grid).
 
     if (f.patch->gen == GenKind::melody)
     {
-        a.gC = { CW / 2, CH / 2 + 6 };
+        a.gC = { 0, CH / 2 + 6 };
         a.gOut = { CW, CH / 2 + 6 };
     }
     else
