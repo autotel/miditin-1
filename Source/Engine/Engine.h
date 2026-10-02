@@ -58,6 +58,7 @@ struct UiSnapshot
         std::array<Ball, Shaker::maxBalls> balls {};
         std::array<WallHit, 8> walls {};
         float  effort = 0;
+        float  boxX = 0, boxY = 0;   // the shaker box's displacement, box widths
         double beat = 0, digT = -9;
         int    digDiv = 2;
         int    arpI = -1, arpPrev = -1, melI = -1;

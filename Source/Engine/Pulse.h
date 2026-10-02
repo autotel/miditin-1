@@ -59,10 +59,17 @@ struct Shaker
     float effort = 0;   // the agitation actually applied, for the readout
     std::array<WallHit, 8> walls {};   // ring of recent wall hits, for drawing
     int wallNext = 0;
+    /** The box's displacement and velocity, box widths (and per second). Balls live in the box's
+        frame, so they feel gravity and minus its acceleration -- the same push for every ball. */
+    float boxX = 0, boxY = 0, boxVx = 0, boxVy = 0;
+    double shakePh = 0;
 
-    /** Only wall hits pulse; impact speed sets strength. `onPulse(strength)` per hit. */
+    /** `agitation` is the energy-modulated core value. SHAKE: it sets how hard a hand shakes the
+        box (~4 Hz across, half that up and down). FOLLOW: the box rides it vertically, so only its
+        changes stir the balls. Only wall hits pulse; impact speed sets strength. `onPulse(strength)`
+        per hit. */
     template <typename OnPulse>
-    void step (float agitation, int wanted, float bounce, double t, double dt, Rng& rng, OnPulse&& onPulse)
+    void step (float agitation, ShakeMode mode, int wanted, float bounce, double t, double dt, Rng& rng, OnPulse&& onPulse)
     {
         wanted = std::clamp (wanted, 1, maxBalls);
         while (count < wanted)
@@ -71,12 +78,25 @@ struct Shaker
 
         const float ag = agitation;
         effort = ag;
-        const float kk = std::pow (ag, 1.4f);
+        float nx = 0, ny;
+        if (mode == ShakeMode::shake)
+        {
+            const float amp = std::pow (ag, 1.4f);
+            shakePh += twoPi * shakeHz * dt;
+            nx = shakeAmp * amp * (float) std::sin (shakePh);
+            ny = 0.6f * shakeAmp * amp * (float) std::sin (0.5 * shakePh + 1.0);
+        }
+        else
+        {
+            // Smoothed, so a square edge or an S&H jump is a fast move rather than an infinite one.
+            const float target = -followTravel * (ag - 0.5f);
+            ny = boxY + (target - boxY) * (float) (1.0 - std::exp (-dt / followTau));
+        }
+        const float vx = (nx - boxX) / (float) dt, vy = (ny - boxY) / (float) dt;
+        const float pushX = vx - boxVx, pushY = vy - boxVy;
+        boxX = nx; boxY = ny; boxVx = vx; boxVy = vy;
+
         const float damp = (float) std::exp (-0.7 * dt);
-        // The prototype adds a uniform random kick of 130*kk*dt per animation frame. That is a
-        // random walk, so its spread scales with sqrt(dt): at a fixed 1 kHz it would be four times
-        // calmer than at 60 fps. Scaling by sqrt(dt / (1/60)) keeps the prototype's feel.
-        const float noise = 130 * kk * (float) std::sqrt (dt / (1.0 / 60.0));
         const float R = radius;
 
         auto hit = [&] (Ball& b, char w, float pos, float sp)
@@ -94,8 +114,8 @@ struct Shaker
         for (int i = 0; i < count; ++i)
         {
             auto& b = balls[(size_t) i];
-            b.vx += (rng.uniform() - 0.5f) * noise + (float) (std::sin (t * twoPi * 2.1) * 16 * kk * dt);
-            b.vy += (rng.uniform() - 0.5f) * noise + 2.6f * (1 - std::min (ag, 1.0f) * 0.85f) * (float) dt;
+            b.vx -= pushX;
+            b.vy -= pushY - gravity * (float) dt;
             b.vx *= damp;
             b.vy *= damp;
             const float sp = std::hypot (b.vx, b.vy);
@@ -117,22 +137,28 @@ struct Shaker
                 const float dx = b.x - a.x, dy = b.y - a.y, d = std::hypot (dx, dy);
                 if (d < 2 * R && d > 0)
                 {
-                    const float nx = dx / d, ny = dy / d, ov = (2 * R - d) / 2;
-                    a.x -= nx * ov; a.y -= ny * ov; b.x += nx * ov; b.y += ny * ov;
-                    const float rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
-                    if (rel > 0) { a.vx -= rel * nx; a.vy -= rel * ny; b.vx += rel * nx; b.vy += rel * ny; }
+                    const float ux = dx / d, uy = dy / d, ov = (2 * R - d) / 2;
+                    a.x -= ux * ov; a.y -= uy * ov; b.x += ux * ov; b.y += uy * ov;
+                    const float rel = (a.vx - b.vx) * ux + (a.vy - b.vy) * uy;
+                    if (rel > 0) { a.vx -= rel * ux; a.vy -= rel * uy; b.vx += rel * ux; b.vy += rel * uy; }
                 }
             }
     }
 
+    /** The SHAKE button: one jolt of the box in a random direction, felt by every ball alike. */
     void kick (Rng& rng) noexcept
     {
+        const double a = rng.uniform() * twoPi;
         for (int i = 0; i < count; ++i)
         {
-            balls[(size_t) i].vx += (rng.uniform() - 0.5f) * 6;
-            balls[(size_t) i].vy += (rng.uniform() - 0.5f) * 6;
+            balls[(size_t) i].vx += 3 * (float) std::cos (a);
+            balls[(size_t) i].vy += 3 * (float) std::sin (a);
         }
     }
+
+    // ponytail: hand-tuned feel constants; knobs if one setting cannot serve every patch.
+    static constexpr float  gravity = 2.6f, shakeAmp = 0.08f, followTravel = 0.5f;
+    static constexpr double shakeHz = 4.0, followTau = 0.02;
 };
 
 struct Digital

@@ -19,6 +19,8 @@ enum class EnergyFilter  : uint8_t { off, lpf, hpf };
 enum class EnergyEdge    : uint8_t { both, pos, neg };
 enum class PulseKind     : uint8_t { wheel, shaker, digital, midiIn };
 enum class ModMode       : uint8_t { scale, offset };
+/** How energy moves the shaker's box: a hand shaking it that hard, or the box riding the curve. */
+enum class ShakeMode     : uint8_t { shake, follow };
 enum class GenKind       : uint8_t { arp, input, melody };
 enum class Order         : uint8_t { up, down, upDown, random, asTyped };
 enum class RunMode       : uint8_t { free, resetOnIn };
@@ -48,6 +50,7 @@ struct Patch
     /** Per generator: wheel, shaker, digital. */
     std::array<ModMode, 3> modMode { ModMode::scale, ModMode::scale, ModMode::scale };
     int          digBase   = 2;   // 2, 3, 5 or 7
+    ShakeMode    shakeMode = ShakeMode::shake;
 
     GenKind      gen       = GenKind::input;
     Order        order     = Order::up;

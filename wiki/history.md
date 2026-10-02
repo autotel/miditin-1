@@ -40,3 +40,9 @@ MIDI out, the IN keyboard is a utility.
 - **SOUND starts off**, Standalone included (it used to start on there): the preview synth is a
   utility; the product is the MIDI out.
 - **IN keyboard muted** (keys at 55 % opacity, title and held list dimmed); OUT keeps the emphasis.
+- **Shaker moved by the energy curve** (author): the prototype's per-ball random kicks are gone.
+  Balls live in the box's frame -- gravity minus the box's acceleration, the same push for all.
+  `STRENGTH`: energy (through OFFSET/SCALE) sets how hard a ~4 Hz hand shakes the box.
+  `POSITION`: the box rides the curve vertically (20 ms smoothing), so only changes stir the balls
+  -- a slow sine barely, a square edge throws them. Very high agitation pins balls to the walls
+  and the pulse rate dips, as a real box shaken hard does. SHAKE ⇄ is one coherent jolt.

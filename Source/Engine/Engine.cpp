@@ -353,7 +353,7 @@ void Engine::stepPulse (Chain& c, juce::MidiBuffer& out, int pos, double dClock)
         case PulseKind::shaker:
         {
             const EnergyMod m { patch.modMode[1], pv[P::shModOffset], pv[P::shModScale] };
-            c.shaker.step (m.apply (c.energy, pv[P::shAgitate], 1, 0, 1.5f), pv.i (P::shBalls), pv[P::shBounce],
+            c.shaker.step (m.apply (c.energy, pv[P::shAgitate], 1, 0, 1.5f), patch.shakeMode, pv.i (P::shBalls), pv[P::shBounce],
                            t, dt, c.rng, [&] (float s) { pulse (c, s, out, pos); });
             break;
         }
@@ -491,6 +491,8 @@ void Engine::fillSnapshot (UiSnapshot& s) const
         v.balls = c.shaker.balls;
         v.walls = c.shaker.walls;
         v.effort = c.shaker.effort;
+        v.boxX = c.shaker.boxX;
+        v.boxY = c.shaker.boxY;
         v.beat = c.digital.beat;
         v.digDiv = c.digital.div;
         v.digT = c.digital.lastPulseT;

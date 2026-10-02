@@ -77,6 +77,7 @@ private:
     std::array<std::unique_ptr<RangeRow>, 3> modOffset, modScale;
     BoxButton kickBtn { "" };
     Segmented digBase { { "2", "3", "5", "7" }, 4 };
+    Segmented shakeMode { { "STRENGTH", "POSITION" }, 2, fonts::buttonSmall };   // what energy is to the box
     Segmented modMode { { "SCALE", "OFFSET" }, 2 };
     // generate
     Segmented genKind { { "ARP", "INPUT", "MELODY" }, 3 };

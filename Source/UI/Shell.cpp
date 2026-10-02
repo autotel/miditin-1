@@ -77,7 +77,7 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
     row (enAmount, P::enFilterAmt);
 
     // pulse
-    for (juce::Component* c : std::initializer_list<juce::Component*> { &pulseKind, &kickBtn, &digBase, &modMode }) add (*c);
+    for (juce::Component* c : std::initializer_list<juce::Component*> { &pulseKind, &kickBtn, &digBase, &shakeMode, &modMode }) add (*c);
     pulseKind.onChange = [this] (int i) { edit ([i] (Patch& p) { p.pulse = (PulseKind) i; }); };
     row (slices, P::whSlices);
     row (speed, P::whSpeed);
@@ -94,6 +94,8 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
     }
     kickBtn.onClick = [this] { host.kick(); };
     digBase.padY = 3;
+    shakeMode.padY = 3;
+    shakeMode.onChange = [this] (int i) { edit ([i] (Patch& p) { p.shakeMode = (ShakeMode) i; }); };
     digBase.onChange = [this] (int i) { edit ([i] (Patch& p) { p.digBase = std::array<int, 4> { 2, 3, 5, 7 }[(size_t) i]; }); };
     modMode.padY = 3;
     modMode.onChange = [this] (int i) { edit ([i] (Patch& p) {
@@ -212,6 +214,7 @@ void Shell::syncControls()
 
     pulseKind.setSelected ((int) p.pulse);
     kickBtn.setText (p.pulse == PulseKind::wheel ? fonts::utf8 ("SPIN \xe2\x86\xbb") : fonts::utf8 ("SHAKE \xe2\x87\x84"));
+    shakeMode.setSelected ((int) p.shakeMode);
     digBase.setSelected (p.digBase == 2 ? 0 : p.digBase == 3 ? 1 : p.digBase == 5 ? 2 : 3);
     if (p.pulse != PulseKind::midiIn)
         modMode.setSelected ((int) p.modMode[(size_t) p.pulse]);
@@ -299,7 +302,7 @@ void Shell::layoutControls()
         const bool wheel = p.pulse == PulseKind::wheel, shaker = p.pulse == PulseKind::shaker,
                    digital = p.pulse == PulseKind::digital, none = p.pulse == PulseKind::midiIn;
         for (auto* c : { slices.get(), speed.get() }) show (*c, wheel);
-        for (auto* c : { agitate.get(), balls.get(), bounce.get() }) show (*c, shaker);
+        for (juce::Component* c : std::initializer_list<juce::Component*> { agitate.get(), balls.get(), bounce.get(), &shakeMode }) show (*c, shaker);
         for (juce::Component* c : std::initializer_list<juce::Component*> { digDiv.get(), swing.get(), &digBase }) show (*c, digital);
         show (kickBtn, wheel || shaker);
         show (modMode, ! none);
@@ -316,6 +319,7 @@ void Shell::layoutControls()
         }
         if (shaker)
         {
+            shakeMode.setBounds (st.next (Segmented::heightFor (1, 3)));
             agitate->setBounds (st.next (rowH));
             balls->setBounds (st.next (rowH));
             bounce->setBounds (st.next (rowH));

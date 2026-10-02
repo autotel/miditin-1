@@ -361,7 +361,9 @@ void drawWheel (juce::Graphics& g, const Frame& f)
 void drawShaker (juce::Graphics& g, const Frame& f)
 {
     const auto& s = *f.s;
-    const float S = CH - 4, bx = (CW - S) / 2, by = 2, R = Shaker::radius;
+    // The box drawn where the energy moved it, scaled down to a few px so it stays in the canvas.
+    const auto off = [] (float d, float gain) { return juce::jlimit (-6.0f, 6.0f, d * gain); };
+    const float S = CH - 4, bx = (CW - S) / 2 + off (s.views[0].boxX, 40), by = 2 + off (s.views[0].boxY, 16), R = Shaker::radius;
     g.setColour (theme::ink);
     g.drawRect (bx, by, S, S, 1.5f);
 

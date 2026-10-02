@@ -33,20 +33,31 @@ struct PulseTests final : juce::UnitTest
         for (int i = 0; i < 100; ++i) early += rest.step (2.0f, 3, dt) >= 0;
         expectEquals (early, 0);
 
-        beginTest ("shaker: deterministic for a seed, only wall hits pulse, settles when calm");
-        auto run = [&] (float ag, uint32_t seed, int from = 0) {
+        beginTest ("shaker STRENGTH: deterministic for a seed, only wall hits pulse, settles when calm");
+        auto run = [&] (auto&& agAt, ShakeMode mode, uint32_t seed, int from = 0, int ticks = 5000) {
             Shaker s; Rng r (seed);
-            std::vector<float> hits;
-            for (int i = 0; i < 5000; ++i)
-                s.step (ag, 5, 0.82f, i * dt, dt, r, [&] (float v) { if (i >= from) hits.push_back (v); });
+            std::vector<double> hits;
+            for (int i = 0; i < ticks; ++i)
+                s.step (agAt (i * dt), mode, 5, 0.82f, i * dt, dt, r, [&] (float v) {
+                    expect (v >= 0.15f && v <= 1.0f);
+                    if (i >= from) hits.push_back (i * dt);
+                });
             return hits;
         };
-        const auto a = run (1, 7), b = run (1, 7);
+        const auto full = [] (double) { return 1.0f; };
+        const auto calm = [] (double) { return 0.0f; };
+        const auto a = run (full, ShakeMode::shake, 7), b = run (full, ShakeMode::shake, 7);
         expect (a == b, "repeat");
         expect (a.size() > 10, juce::String ((int) a.size()));
-        for (float v : a) expect (v >= 0.15f && v <= 1.0f);
-        expect (run (1, 8) != a, "seed");
-        expect (run (0, 7, 3000).size() < run (0, 7).size() / 4);   // dropped balls bounce, then mostly lie still
+        expect (run (full, ShakeMode::shake, 8) != a, "seed");
+        expect (run (calm, ShakeMode::shake, 7, 3000).size() < a.size() / 10, "unshaken balls mostly lie still");
+
+        beginTest ("shaker POSITION: a steady curve settles, a square curve jolts at its edges");
+        expect (run ([] (double) { return 0.8f; }, ShakeMode::follow, 7, 3000).size() < a.size() / 10, "a box held still lets the balls lie");
+        const auto sq = run ([] (double t) { return std::fmod (t, 1.0) < 0.5 ? 1.0f : 0.0f; }, ShakeMode::follow, 7, 2000, 6000);
+        for (double edge = 2.0; edge < 6.0; edge += 0.5)   // every edge throws the balls at a wall
+            expect (std::any_of (sq.begin(), sq.end(), [edge] (double t) { return t >= edge && t < edge + 0.1; }),
+                    "edge at " + juce::String (edge));
 
         beginTest ("digital: base x 2^k pulses per bar, downbeats stronger");
         for (int base : { 2, 3, 5, 7 })

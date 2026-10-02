@@ -27,6 +27,7 @@ namespace
     const std::array<const char*, 3> edgeNames   { "both", "pos", "neg" };
     const std::array<const char*, 4> pulseNames  { "wheel", "shaker", "digital", "midiIn" };
     const std::array<const char*, 2> modNames    { "scale", "offset" };
+    const std::array<const char*, 2> shakeNames  { "shake", "follow" };
     const std::array<const char*, 3> genNames    { "arp", "input", "melody" };
     const std::array<const char*, 5> orderNames  { "up", "down", "upDown", "random", "asTyped" };
     const std::array<const char*, 2> runNames    { "free", "resetOnIn" };
@@ -89,6 +90,7 @@ juce::XmlElement Patch::toXml() const
     putEnum (x, "pulse", pulse, pulseNames);
     putEnum (x, "wheelMod", modMode[0], modNames);
     putEnum (x, "shakerMod", modMode[1], modNames);
+    putEnum (x, "shakeMode", shakeMode, shakeNames);
     putEnum (x, "digitalMod", modMode[2], modNames);
     x.setAttribute ("digBase", digBase);
     putEnum (x, "gen", gen, genNames);
@@ -130,6 +132,7 @@ Patch Patch::fromXml (const juce::XmlElement& x)
     getEnum (x, "pulse", p.pulse, pulseNames);
     getEnum (x, "wheelMod", p.modMode[0], modNames);
     getEnum (x, "shakerMod", p.modMode[1], modNames);
+    getEnum (x, "shakeMode", p.shakeMode, shakeNames);
     getEnum (x, "digitalMod", p.modMode[2], modNames);
     const int base = x.getIntAttribute ("digBase", p.digBase);
     if (base == 2 || base == 3 || base == 5 || base == 7)
