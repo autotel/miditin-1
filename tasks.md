@@ -9,11 +9,6 @@ Source for every phase: `miditin 1 - spec.md` (§ numbers below) and the v2 prot
 Port behaviour from the prototype; do not reinvent it. Each phase ends with `./build.sh test` green
 and one commit per task.
 
-## Needs the author
-
-- [author] The manual REAPER pass in `wiki/testing.md` -- needs someone at the screen; agents
-  skip it. `./build.sh hostcheck` covers what can be checked headlessly.
-
 ## Open (spec §9) -- not tasks until filed as requirements
 
 Transpose centre for TRANSPOSE BY IN; per-voice transformer in poly;
