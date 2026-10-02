@@ -630,7 +630,7 @@ void Shell::drawBottomText (juce::Graphics& g)
 juce::String Shell::energyZone (juce::Point<float> l) const
 {
     const views::EnergyGeo G;
-    if (patch.enSource == EnergySource::osc)
+    if (views::EnergyGeo::arcParam (patch) != P::count)
     {
         const float d = l.getDistanceFrom ({ G.cx, G.cy });
         const float a = std::atan2 (l.y - G.cy, l.x - G.cx) + pi / 2;
@@ -706,8 +706,8 @@ void Shell::mouseDown (const juce::MouseEvent& e)
         {
             drag.mode = Drag::rate;
             drag.x0 = l.x;
-            drag.n0 = views::EnergyGeo::rateN (patch, frame().pv);
-            host.beginGesture (patch.enSync ? P::enDiv : P::enRate);
+            drag.n0 = views::EnergyGeo::arcN (patch, frame().pv);
+            host.beginGesture (views::EnergyGeo::arcParam (patch));
         }
         else if (z == "zero")
         {
@@ -841,8 +841,9 @@ void Shell::mouseDrag (const juce::MouseEvent& e)
     if (drag.mode == Drag::rate)
     {
         const float n = juce::jlimit (0.0f, 1.0f, drag.n0 + (l.x - drag.x0) / 110.0f);
-        if (patch.enSync) host.setParam (P::enDiv, std::round (n * 7));
-        else host.setParam (P::enRate, 0.02f * std::pow (150.0f, n));
+        const auto ap = views::EnergyGeo::arcParam (patch);
+        const auto nat = toNatural (spec (ap), n);
+        host.setParam (ap, spec (ap).step > 0 ? std::round (nat) : nat);
     }
     else if (drag.mode == Drag::zero)
         host.setParam (P::enHpfZero, juce::jlimit (0.0f, 1.0f, v));
@@ -857,7 +858,7 @@ void Shell::mouseUp (const juce::MouseEvent&)
 {
     switch (drag.mode)
     {
-        case Drag::rate: host.endGesture (patch.enSync ? P::enDiv : P::enRate); break;
+        case Drag::rate: host.endGesture (views::EnergyGeo::arcParam (patch)); break;
         case Drag::mid:  host.endGesture (P::enCenter); break;
         case Drag::zero: host.endGesture (P::enHpfZero); break;
         case Drag::top:

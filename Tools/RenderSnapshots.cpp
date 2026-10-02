@@ -147,5 +147,9 @@ int main (int argc, char** argv)
         h.p.midiInSource = MidiInSource::clock;
         h.p.clockDiv = 4;
     }, { 57, 60, 64 });
+    render (dir, "audio-gain", [] (FakeHost& h) {
+        h.p.enSource = EnergySource::audio;
+        h.pv[P::enGain] = 12;
+    }, { 60, 64, 67 });
     return 0;
 }

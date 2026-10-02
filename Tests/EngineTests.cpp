@@ -529,7 +529,7 @@ struct EngineTests final : juce::UnitTest
             expectWithinAbsoluteError (s.views[0].energy, 1.0f, 0.02f);
         }
 
-        beginTest ("audio source: input RMS is the energy, mono or stereo");
+        beginTest ("audio source: input RMS times GAIN is the energy, mono or stereo");
         for (int channels : { 1, 2 })
         {
             Engine e;
@@ -557,6 +557,9 @@ struct EngineTests final : juce::UnitTest
             expectWithinAbsoluteError (run (0.3, 0), 0.0f, 0.01f);
             run (0.01, std::numeric_limits<float>::quiet_NaN());
             expect (std::isfinite (run (0.01, 0)), "a NaN in the input does not stick");
+            pv[P::enGain] = 4;
+            expectWithinAbsoluteError (run (0.2, 0.1f), 0.4f / std::sqrt (2.0f), 0.02f);
+            expectWithinAbsoluteError (run (0.2, 0.5f), 1.0f, 0.01f);   // over-amplified, clamped
         }
     }
 };

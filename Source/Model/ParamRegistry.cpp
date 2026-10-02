@@ -16,6 +16,8 @@ const std::array<ParamSpec, numParams>& params()
         // RETRIG's start phase, and where the HPF's output rests.
         { "en_phase",   "Energy start phase",       "PHASE",   0, 1,  0, 0, Fmt::degrees },
         { "en_hpf_zero", "Energy HPF zero",         "ZERO",    0, 1,  0.5f, 0, Fmt::plain },
+        // AUDIO's over-amplification: the input RMS times this, clamped to 1.
+        { "en_gain",    "Energy audio gain",        "GAIN",    1, 100, 1, 0, Fmt::times, true },
         { "wh_speed",   "Wheel speed",              "SPEED",   0.05f, 2, 0.7f, 0, Fmt::plain },
         { "wh_slices",  "Wheel slices",             "SLICES",  3, 24, 12, 1, Fmt::integer },
         { "sh_agitate", "Shaker agitation",         "AGITATE", 0, 1,  1, 0, Fmt::plain },

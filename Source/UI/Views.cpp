@@ -108,11 +108,11 @@ juce::String signedTone (int d) { return d > 0 ? "+" + juce::String (d) : juce::
 
 // -- shared geometry ---------------------------------------------------------------------------------
 
-float EnergyGeo::rateN (const Patch& p, const ParamValues& pv)
+P EnergyGeo::arcParam (const Patch& p)
 {
-    if (p.enSync)
-        return (float) pv.i (P::enDiv) / 7.0f;
-    return juce::jlimit (0.0f, 1.0f, std::log (pv[P::enRate] / 0.02f) / std::log (150.0f));
+    return p.enSource == EnergySource::audio ? P::enGain
+         : p.enSource != EnergySource::osc   ? P::count
+         : p.enSync ? P::enDiv : P::enRate;
 }
 
 Pool poolFor (const Patch& p, const ParamValues& pv, const UiSnapshot& s)
@@ -274,16 +274,16 @@ void drawEnergy (juce::Graphics& g, const Frame& f)
         disc (g, { xr, G.y (s.views[(size_t) i].energy) }, i ? 2.5f : 3.5f);
     }
 
-    if (p.enSource == EnergySource::osc)
+    if (const auto ap = EnergyGeo::arcParam (p); ap != P::count)
     {
         const float ra = rm + 6, a0 = -pi / 2 - rateArc, a1 = -pi / 2 + rateArc;
-        const float n = EnergyGeo::rateN (p, f.pv), aN = a0 + (a1 - a0) * n;
+        const float n = EnergyGeo::arcN (p, f.pv), aN = a0 + (a1 - a0) * n;
         const bool hot = hover == "rate";
         g.setColour (theme::line2);
         stroke (g, arc (cx, cy, ra, a0, a1), 1.5f);
         g.setColour (theme::ink);
         stroke (g, arc (cx, cy, ra, a0, aN), hot ? 3.0f : 2.0f);
-        if (p.enSync)
+        if (ap == P::enDiv)
         {
             g.setColour (theme::muted);
             for (int i = 0; i < 8; ++i)
@@ -291,8 +291,7 @@ void drawEnergy (juce::Graphics& g, const Frame& f)
         }
         g.setColour (theme::ink);
         disc (g, polar (cx, cy, ra, aN), hot ? 4.0f : 3.0f);
-        const auto label = juce::String (juce::CharPointer_UTF8 (p.enSync ? format (P::enDiv, f.pv[P::enDiv]).c_str()
-                                                                           : format (P::enRate, f.pv[P::enRate]).c_str()));
+        const auto label = juce::String (juce::CharPointer_UTF8 (format (ap, f.pv[ap]).c_str()));
         const auto lp = polar (cx, cy, ra, a1);
         txt (g, label, lp.x + 6, lp.y + 2, hot ? theme::ink : theme::muted, 8);
     }

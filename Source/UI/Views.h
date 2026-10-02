@@ -59,8 +59,11 @@ struct EnergyGeo
     float cx = CW / 2, cy = CH / 2 + 4, rm = CH / 2 - 11;
     float y (float v) const { return cy + rm - 6 - (2 * rm - 12) * v; }
     float v (float y) const { return juce::jlimit (0.0f, 1.0f, (cy + rm - 6 - y) / (2 * rm - 12)); }
-    /** 0..1 position of the rate on its arc: log Hz, or the sync division. */
-    static float rateN (const Patch&, const ParamValues&);
+    /** What the bent slider atop the drawing sets: RATE or CYCLE for OSC, GAIN for AUDIO;
+        `P::count` for a source without one. */
+    static P arcParam (const Patch&);
+    /** 0..1 position of `arcParam` on its arc. */
+    static float arcN (const Patch& p, const ParamValues& pv) { return toNormalised (spec (arcParam (p)), pv[arcParam (p)]); }
 };
 
 /** The transform wheel's geometry: the pitch range it shows and its spiral radii. */

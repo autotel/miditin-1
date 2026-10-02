@@ -13,7 +13,7 @@ namespace mdt
 {
 enum class P
 {
-    enRate, enDiv, enCenter, enDepth, enFilterAmt, enPhase, enHpfZero,
+    enRate, enDiv, enCenter, enDepth, enFilterAmt, enPhase, enHpfZero, enGain,
     whSpeed, whSlices, shAgitate, shBalls, shBounce, dgDiv, dgSwing,
     whModOffset, whModScale, shModOffset, shModScale, dgModOffset, dgModScale,
     melLength,
