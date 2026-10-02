@@ -25,7 +25,9 @@ searching from scratch.
 ./build.sh          # configure + build (VST3 + Standalone + tests)
 ./build.sh test     # + run the headless suite
 ./build.sh sanitize # the suite under ASan/UBSan (build-asan/)
+./build.sh hostcheck # load the built VST3 headlessly: MIDI out, state, bypass
 ```
+UI checks: `MiditinSnap <dir>` renders PNGs offscreen — see [wiki/testing.md](wiki/testing.md).
 RelWithDebInfo deliberately — a Debug VST3 in a DAW is far slower and has `jassert` armed (a fired
 jassert is a SIGTRAP that takes the host down). `cmake --preset debug` → `build-debug/`, for gdb
 only. Standalone: `./run-built.sh`. VST3: `build/Miditin_artefacts/RelWithDebInfo/VST3/miditin 1.vst3`
@@ -49,9 +51,9 @@ open changes nothing until the plugin is reloaded.** Crash in REAPER: `./debug-r
 - **Poly voices are preallocated.** Note-on claims a chain from a fixed pool; nothing is allocated,
   locked or logged on the audio thread. `juce::AudioBuffer` / `MidiBuffer` assignment copies — pass
   references.
-- **One table holds every range, default and unit** (`Source/Model/ParamRegistry.cpp`, once it
-  exists). Host automation, readouts and saved state all derive from it. No compatibility shims:
-  there are no users but the author, and clean code beats an old patch loading.
+- **One table holds every range, default and unit** (`Source/Model/ParamRegistry.cpp`). Host
+  automation, readouts and saved state all derive from it. No compatibility shims: there are no
+  users but the author, and clean code beats an old patch loading.
 - **Structural state is not automatable**: anything that reshapes the chain (pulse generator kind,
   generator kind, transform mode, voice mode, a typed arpeggio, the melody grid, the pitch-class set).
 
@@ -76,7 +78,7 @@ open changes nothing until the plugin is reloaded.** Crash in REAPER: `./debug-r
   them **unmodified** (no subsetting into a renamed font); the OFL text ships with any binary
 - Put durable knowledge in `wiki/`, not here or in `tasks.md` — never the same fact twice
 - **Never open a window on the user's display.** Check the UI with the offscreen snapshot tool
-  (`Tools/RenderSnapshots.cpp`, no window at all). If the running Standalone is truly needed, run it
+  (`MiditinSnap`, no window at all). If the running Standalone is truly needed, run it
   under `xvfb-run -a` — never on `DISPLAY=:0` / Wayland.
 
 ## Unattended runs

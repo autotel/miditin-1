@@ -9,10 +9,10 @@ Source for every phase: `miditin 1 - spec.md` (§ numbers below) and the v2 prot
 Port behaviour from the prototype; do not reinvent it. Each phase ends with `./build.sh test` green
 and one commit per task.
 
-## Phase 8 -- presets and polish
+## Needs the author
 
-- [opus] Load in REAPER: MIDI out routed to a synth track, sync against the host transport, state
-  restore on project reload, no hanging notes on bypass/removal. Record findings in `wiki/testing.md`.
+- [author] The manual REAPER pass in `wiki/testing.md` -- needs someone at the screen; agents
+  skip it. `./build.sh hostcheck` covers what can be checked headlessly.
 
 ## Open (spec §9) -- not tasks until filed as requirements
 

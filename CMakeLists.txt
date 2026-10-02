@@ -53,8 +53,7 @@ set(MDT_UI_SOURCES
 
 set(MDT_DEFINITIONS
     JUCE_WEB_BROWSER=0
-    JUCE_USE_CURL=0
-    JUCE_DISPLAY_SPLASH_SCREEN=0)
+    JUCE_USE_CURL=0)
 
 target_sources(Miditin PRIVATE
     ${MDT_CORE_SOURCES}
@@ -118,3 +117,17 @@ target_link_libraries(MiditinSnap
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
+
+# -- Headless VST3 host check ----------------------------------------------------
+# Loads the built VST3 through JUCE's VST3 hosting -- the wrapper, the MIDI output path, bypass --
+# without a DAW or a window. `./build.sh hostcheck`.
+juce_add_console_app(MiditinHostCheck PRODUCT_NAME "MiditinHostCheck")
+target_sources(MiditinHostCheck PRIVATE Tools/HostCheck.cpp)
+target_compile_definitions(MiditinHostCheck PRIVATE ${MDT_DEFINITIONS} JUCE_PLUGINHOST_VST3=1)
+target_link_libraries(MiditinHostCheck
+    PRIVATE
+        juce::juce_audio_processors
+    PUBLIC
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags)
+add_dependencies(MiditinHostCheck Miditin_VST3)
