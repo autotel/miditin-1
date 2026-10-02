@@ -9,6 +9,20 @@ Source for every phase: `miditin 1 - spec.md` (§ numbers below) and the v2 prot
 Port behaviour from the prototype; do not reinvent it. Each phase ends with `./build.sh test` green
 and one commit per task.
 
+## MIDI-in source (author, 2026-10-02)
+
+The cable bullet came back in the requirements file after it had landed (93bc50b); nothing to do.
+
+- [opus] **MIDI-in pulse source: NOTES or CLOCK.** `Patch::midiInSource` + `Patch::clockDiv`
+  (1/4 1/8 1/8T 1/16 1/16T 1/32 = 24 12 8 6 4 3 clock ticks). CLOCK counts incoming 0xF8 (0xFA
+  restarts the count) and pulses every running chain on each division, at the tick's sample; VST3
+  delivers no clock bytes, so while none has arrived for 0.5 s it follows the host's PPQ (playing
+  only) on the same grid. Quarter-note pulses strength 1, others 0.6. Notes then only feed
+  arp/transform, not pulses. Silent-until-input still holds. UI: SOURCE segmented, DIV when
+  CLOCK; the MIDI-in drawing says CLOCK + div and flashes on pulses; IN header's feeds text drops
+  "pulse". Tests: 0xF8 at 120 bpm, 1/8 over 2 beats = 4 pulses; host fallback 1/16 over 4 beats
+  = 16; under CLOCK a note-on is no pulse.
+
 ## Needs the author
 
 - [author] The manual REAPER pass in `wiki/testing.md` -- needs someone at the screen; agents
