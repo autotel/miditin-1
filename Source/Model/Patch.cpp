@@ -26,7 +26,7 @@ namespace
     const std::array<const char*, 3> filterNames { "off", "lpf", "hpf" };
     const std::array<const char*, 3> edgeNames   { "both", "pos", "neg" };
     const std::array<const char*, 4> pulseNames  { "wheel", "shaker", "digital", "midiIn" };
-    const std::array<const char*, 2> modNames    { "scale", "offset" };
+    const std::array<const char*, 2> wheelNames  { "speed", "angle" };
     const std::array<const char*, 2> shakeNames  { "shake", "follow" };
     const std::array<const char*, 3> genNames    { "arp", "input", "melody" };
     const std::array<const char*, 5> orderNames  { "up", "down", "upDown", "random", "asTyped" };
@@ -88,10 +88,8 @@ juce::XmlElement Patch::toXml() const
     putEnum (x, "enEdge", enEdge, edgeNames);
     x.setAttribute ("ccNumber", ccNumber);
     putEnum (x, "pulse", pulse, pulseNames);
-    putEnum (x, "wheelMod", modMode[0], modNames);
-    putEnum (x, "shakerMod", modMode[1], modNames);
+    putEnum (x, "wheelMode", wheelMode, wheelNames);
     putEnum (x, "shakeMode", shakeMode, shakeNames);
-    putEnum (x, "digitalMod", modMode[2], modNames);
     x.setAttribute ("digBase", digBase);
     putEnum (x, "gen", gen, genNames);
     putEnum (x, "order", order, orderNames);
@@ -130,10 +128,8 @@ Patch Patch::fromXml (const juce::XmlElement& x)
     getEnum (x, "enEdge", p.enEdge, edgeNames);
     p.ccNumber = juce::jlimit (0, 119, x.getIntAttribute ("ccNumber", p.ccNumber));
     getEnum (x, "pulse", p.pulse, pulseNames);
-    getEnum (x, "wheelMod", p.modMode[0], modNames);
-    getEnum (x, "shakerMod", p.modMode[1], modNames);
+    getEnum (x, "wheelMode", p.wheelMode, wheelNames);
     getEnum (x, "shakeMode", p.shakeMode, shakeNames);
-    getEnum (x, "digitalMod", p.modMode[2], modNames);
     const int base = x.getIntAttribute ("digBase", p.digBase);
     if (base == 2 || base == 3 || base == 5 || base == 7)
         p.digBase = base;

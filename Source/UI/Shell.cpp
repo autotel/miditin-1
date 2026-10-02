@@ -77,7 +77,7 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
     row (enAmount, P::enFilterAmt);
 
     // pulse
-    for (juce::Component* c : std::initializer_list<juce::Component*> { &pulseKind, &kickBtn, &digBase, &shakeMode, &modMode }) add (*c);
+    for (juce::Component* c : std::initializer_list<juce::Component*> { &pulseKind, &kickBtn, &digBase, &energyMode }) add (*c);
     pulseKind.onChange = [this] (int i) { edit ([i] (Patch& p) { p.pulse = (PulseKind) i; }); };
     row (slices, P::whSlices);
     row (speed, P::whSpeed);
@@ -94,12 +94,11 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
     }
     kickBtn.onClick = [this] { host.kick(); };
     digBase.padY = 3;
-    shakeMode.padY = 3;
-    shakeMode.onChange = [this] (int i) { edit ([i] (Patch& p) { p.shakeMode = (ShakeMode) i; }); };
     digBase.onChange = [this] (int i) { edit ([i] (Patch& p) { p.digBase = std::array<int, 4> { 2, 3, 5, 7 }[(size_t) i]; }); };
-    modMode.padY = 3;
-    modMode.onChange = [this] (int i) { edit ([i] (Patch& p) {
-        if (p.pulse != PulseKind::midiIn) p.modMode[(size_t) p.pulse] = (ModMode) i; }); };
+    energyMode.padY = 3;
+    energyMode.onChange = [this] (int i) { edit ([i] (Patch& p) {
+        if (p.pulse == PulseKind::wheel) p.wheelMode = (WheelMode) i;
+        if (p.pulse == PulseKind::shaker) p.shakeMode = (ShakeMode) i; }); };
 
     // generate
     for (juce::Component* c : std::initializer_list<juce::Component*> { &genKind, &tones, &order, &transposeBtn, &clearBtn, &runMode }) add (*c);
@@ -213,10 +212,11 @@ void Shell::syncControls()
 
     pulseKind.setSelected ((int) p.pulse);
     kickBtn.setText (p.pulse == PulseKind::wheel ? fonts::utf8 ("SPIN \xe2\x86\xbb") : fonts::utf8 ("SHAKE \xe2\x87\x84"));
-    shakeMode.setSelected ((int) p.shakeMode);
     digBase.setSelected (p.digBase == 2 ? 0 : p.digBase == 3 ? 1 : p.digBase == 5 ? 2 : 3);
-    if (p.pulse != PulseKind::midiIn)
-        modMode.setSelected ((int) p.modMode[(size_t) p.pulse]);
+    const bool wheel = p.pulse == PulseKind::wheel;
+    energyMode.setLabels (wheel ? juce::StringArray { "SPEED", "ANGLE" } : juce::StringArray { "STRENGTH", "POSITION" });
+    energyMode.setSelected (wheel ? (int) p.wheelMode : (int) p.shakeMode);
+    speed->setLabel (wheel && p.wheelMode == WheelMode::angle ? "TURNS" : spec (P::whSpeed).label);
 
     genKind.setSelected ((int) p.gen);
     if (! tones.hasKeyboardFocus (true))
@@ -301,10 +301,10 @@ void Shell::layoutControls()
         const bool wheel = p.pulse == PulseKind::wheel, shaker = p.pulse == PulseKind::shaker,
                    digital = p.pulse == PulseKind::digital, none = p.pulse == PulseKind::midiIn;
         for (auto* c : { slices.get(), speed.get() }) show (*c, wheel);
-        for (juce::Component* c : std::initializer_list<juce::Component*> { agitate.get(), balls.get(), bounce.get(), &shakeMode }) show (*c, shaker);
+        for (auto* c : { agitate.get(), balls.get(), bounce.get() }) show (*c, shaker);
         for (juce::Component* c : std::initializer_list<juce::Component*> { digDiv.get(), swing.get(), &digBase }) show (*c, digital);
         show (kickBtn, wheel || shaker);
-        show (modMode, ! none);
+        show (energyMode, wheel || shaker);
         for (size_t i = 0; i < 3; ++i)
         {
             show (*modOffset[i], (int) p.pulse == (int) i);
@@ -321,9 +321,7 @@ void Shell::layoutControls()
             agitate->setBounds (st.next (rowH));
             balls->setBounds (st.next (rowH));
             bounce->setBounds (st.next (rowH));
-            auto r = st.next (bigButtonH);
-            shakeMode.setBounds (r.removeFromLeft (r.getWidth() * 3 / 5));
-            kickBtn.setBounds (r.withTrimmedLeft (gap));
+            kickBtn.setBounds (st.next (bigButtonH));
         }
         if (digital)
         {
@@ -334,7 +332,8 @@ void Shell::layoutControls()
         if (! none)
         {
             st.y += 4;
-            labelled (st, "ENERGY", modMode, Segmented::heightFor (1, 3));
+            if (wheel || shaker)
+                labelled (st, "ENERGY", energyMode, Segmented::heightFor (1, 3));
             modOffset[(size_t) p.pulse]->setBounds (st.next (rowH));
             modScale[(size_t) p.pulse]->setBounds (st.next (rowH));
         }

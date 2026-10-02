@@ -9,18 +9,14 @@
     the prototype's `chainStep`. */
 namespace mdt
 {
-/** m = offset + scale * energy, then the core parameter is scaled by m, or offset by m * range.
-    Offset mode centres the energy (energy - 0.5), so the slider is the middle of the swing: with
-    energy 0..1 as is (spec §4, the prototype) it only ever added, and the wheel ran flat out. */
+/** The core parameter scaled by m = offset + scale * energy (spec §4's SCALE mode; the OFFSET
+    mode went for per-generator energy modes, wiki/history.md). */
 struct EnergyMod
 {
-    ModMode mode = ModMode::scale;
-    float   offset = 0, scale = 1;
+    float offset = 0, scale = 1;
 
-    float apply (float energy, float base, float range, float lo, float hi) const noexcept
+    float apply (float energy, float base, float lo, float hi) const noexcept
     {
-        if (mode == ModMode::offset)
-            return std::clamp (base + (offset + scale * (energy - 0.5f)) * range, lo, hi);
         return std::clamp (base * (offset + scale * energy), lo, hi);
     }
 };
@@ -30,13 +26,27 @@ struct Wheel
     double a = 0, w = 0;   // angle, angular speed (rad/s)
     long   slot = 0;
     float  flick = 0;      // pointer flick, 1 at a peg, decays
+    double angleBase = 0;  // ANGLE: where energy 0 points, re-based on a switch so nothing jumps
+    WheelMode lastMode = WheelMode::speed;
 
-    /** Energy is spin force: speed eases toward the target with inertia. A peg passing the
-        pointer is a pulse, stronger the faster the wheel turns. */
-    float step (float targetRevPerSec, int slices, double dt) noexcept
+    /** SPEED: `value` is rev/s, the spin force -- speed eases toward it with inertia. ANGLE:
+        `value` is turns, and the wheel is sprung (critically damped) to that angle, so pegs pass
+        only while the energy moves. A peg passing the pointer is a pulse, stronger the faster the
+        wheel turns, either way. */
+    float step (float value, WheelMode mode, int slices, double dt) noexcept
     {
-        const double target = targetRevPerSec * twoPi;
-        w += (target - w) * std::min (1.0, 0.8 * dt);
+        const double target = value * twoPi;
+        if (mode == WheelMode::angle)
+        {
+            if (lastMode != mode)
+                angleBase = a - target;
+            w += (springW * springW * (angleBase + target - a) - 2 * springW * w) * dt;
+        }
+        else
+        {
+            w += (target - w) * std::min (1.0, 0.8 * dt);
+        }
+        lastMode = mode;
         a += w * dt;
         flick = std::max (0.0f, flick - (float) dt * 7);
         const long s = (long) std::floor (a / (twoPi / slices));
@@ -44,10 +54,13 @@ struct Wheel
             return -1;
         slot = s;
         flick = 1;
-        return std::clamp (0.3f + (float) (w / (twoPi * 1.4)), 0.0f, 1.0f);
+        return std::clamp (0.3f + (float) (std::abs (w) / (twoPi * 1.4)), 0.0f, 1.0f);
     }
 
     void kick() noexcept { w += twoPi * 1.2; }
+
+    // ponytail: hand-tuned spring (settles in ~0.3 s); a knob if ANGLE wants more or less lag.
+    static constexpr double springW = 12.0;
 };
 
 struct Ball { float x = 0.5f, y = 0.5f, vx = 0, vy = 0, cool = 0; double hit = -9; };

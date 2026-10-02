@@ -49,7 +49,9 @@ MIDI out, the IN keyboard is a utility.
   A mode switch re-bases the box (its position stays put, the offset drifts home over ~2 s) and
   the shake amplitude eases in over 20 ms: without that, clicking STRENGTH/POSITION or an S&H
   jump teleported the box and fired a burst of notes.
-- **Energy OFFSET mode is centred** (author): `base + (off + scl·(energy − 0.5))·range`, all three
-  generators; spec §4 and the prototype use `energy` as is, so offset only ever added -- the wheel
-  ran at SPEED + 0.3..1.7 rev/s. The wheel's range is also 1 rev/s, not 2: default swing ±0.5
-  around SPEED. SCALE mode is unchanged.
+- **SCALE/OFFSET energy switch removed** (author): it was read as "what energy does", which it
+  wasn't, and offset mode only ever added (energy 0..1), so the wheel ran flat out. A brief
+  centred-offset fix was replaced by: one mapping, `core * (OFFSET + SCALE * energy)`, plus a
+  per-generator ENERGY mode -- wheel SPEED (spin force) / ANGLE (sprung to `SPEED` turns x m, the
+  slider reading TURNS; pegs pass only while energy moves; a switch re-bases, no jump), shaker
+  STRENGTH / POSITION. Digital has none.

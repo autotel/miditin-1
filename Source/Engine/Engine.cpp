@@ -345,22 +345,22 @@ void Engine::stepPulse (Chain& c, juce::MidiBuffer& out, int pos, double dClock)
     {
         case PulseKind::wheel:
         {
-            const EnergyMod m { patch.modMode[0], pv[P::whModOffset], pv[P::whModScale] };
-            const float s = c.wheel.step (m.apply (c.energy, pv[P::whSpeed], 1, 0, 3), pv.i (P::whSlices), dt);
+            const EnergyMod m { pv[P::whModOffset], pv[P::whModScale] };
+            const float s = c.wheel.step (m.apply (c.energy, pv[P::whSpeed], 0, 3), patch.wheelMode, pv.i (P::whSlices), dt);
             if (s >= 0) pulse (c, s, out, pos);
             break;
         }
         case PulseKind::shaker:
         {
-            const EnergyMod m { patch.modMode[1], pv[P::shModOffset], pv[P::shModScale] };
-            c.shaker.step (m.apply (c.energy, pv[P::shAgitate], 1, 0, 1.5f), patch.shakeMode, pv.i (P::shBalls), pv[P::shBounce],
+            const EnergyMod m { pv[P::shModOffset], pv[P::shModScale] };
+            c.shaker.step (m.apply (c.energy, pv[P::shAgitate], 0, 1.5f), patch.shakeMode, pv.i (P::shBalls), pv[P::shBounce],
                            t, dt, c.rng, [&] (float s) { pulse (c, s, out, pos); });
             break;
         }
         case PulseKind::digital:
         {
-            const EnergyMod m { patch.modMode[2], pv[P::dgModOffset], pv[P::dgModScale] };
-            const int k = (int) std::lround (m.apply (c.energy, (float) pv.i (P::dgDiv), 4, 0, 4));
+            const EnergyMod m { pv[P::dgModOffset], pv[P::dgModScale] };
+            const int k = (int) std::lround (m.apply (c.energy, (float) pv.i (P::dgDiv), 0, 4));
             const float s = c.digital.step (dClock, patch.digBase, k, pv[P::dgSwing]);
             if (s >= 0)
             {

@@ -11,31 +11,44 @@ struct PulseTests final : juce::UnitTest
     {
         const double dt = 0.001;
 
-        beginTest ("energy modulation: scale and offset modes");
+        beginTest ("energy modulation: the core value scaled by offset + scale * energy");
         EnergyMod m;
-        expectWithinAbsoluteError (m.apply (0.5f, 0.7f, 2, 0, 3), 0.35f, 1e-6f);
-        m.mode = ModMode::offset;
-        expectWithinAbsoluteError (m.apply (0.5f, 0.7f, 1, 0, 3), 0.7f, 1e-6f);          // mid energy: the slider
-        expectWithinAbsoluteError (m.apply (1.0f, 0.7f, 1, 0, 3), 1.2f, 1e-6f);          // default swing +-0.5
-        expectWithinAbsoluteError (m.apply (0.0f, 0.7f, 1, 0, 3), 0.2f, 1e-6f);
+        expectWithinAbsoluteError (m.apply (0.5f, 0.7f, 0, 3), 0.35f, 1e-6f);
         m.offset = -0.5f; m.scale = 2;
-        expectWithinAbsoluteError (m.apply (0.75f, 0.7f, 1, 0, 3), 0.7f, 1e-6f);
-        expectWithinAbsoluteError (m.apply (0.0f, 0.7f, 1, 0, 3), 0.0f, 1e-6f);          // clamped
+        expectWithinAbsoluteError (m.apply (0.75f, 0.7f, 0, 3), 0.7f, 1e-6f);
+        expectWithinAbsoluteError (m.apply (0.0f, 0.7f, 0, 3), 0.0f, 1e-6f);   // clamped
 
         beginTest ("wheel: at speed, slices x rev/s pulses per second, stronger when faster");
         Wheel w;
         int n = 0;
         float strength = 0;
         for (int i = 0; i < 20000; ++i)
-            if (float s = w.step (0.5f, 12, dt); s >= 0 && i >= 10000) { ++n; strength = s; }
+            if (float s = w.step (0.5f, WheelMode::speed, 12, dt); s >= 0 && i >= 10000) { ++n; strength = s; }
         expect (std::abs (n - 60) <= 1, juce::String (n));
         expectWithinAbsoluteError (strength, 0.3f + 0.5f / 1.4f, 0.01f);
 
         beginTest ("wheel: speed eases in -- no pulse in the first instant from rest");
         Wheel rest;
         int early = 0;
-        for (int i = 0; i < 100; ++i) early += rest.step (2.0f, 3, dt) >= 0;
+        for (int i = 0; i < 100; ++i) early += rest.step (2.0f, WheelMode::speed, 3, dt) >= 0;
         expectEquals (early, 0);
+
+        beginTest ("wheel ANGLE: energy turns it -- still energy, still wheel; a switch jumps nothing");
+        {
+            Wheel a;
+            int pegs = 0;
+            for (int i = 0; i < 3000; ++i) a.step (0.4f, WheelMode::speed, 12, dt);   // spinning
+            for (int i = 0; i < 3000; ++i) pegs += a.step (0.2f, WheelMode::angle, 12, dt) >= 0;
+            expect (pegs <= 3, "the switch brakes it rather than jumping: " + juce::String (pegs));
+            int still = 0;
+            for (int i = 0; i < 2000; ++i) still += a.step (0.2f, WheelMode::angle, 12, dt) >= 0;
+            expectEquals (still, 0);
+            // One turn of energy over 2 s: one peg per slice, then rest.
+            int swept = 0;
+            for (int i = 0; i < 4000; ++i)
+                swept += a.step (0.2f + (float) std::min (1.0, i * dt / 2), WheelMode::angle, 12, dt) >= 0;
+            expectEquals (swept, 12);
+        }
 
         beginTest ("shaker STRENGTH: deterministic for a seed, only wall hits pulse, settles when calm");
         auto run = [&] (auto&& agAt, ShakeMode mode, uint32_t seed, int from = 0, int ticks = 5000) {

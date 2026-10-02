@@ -18,7 +18,8 @@ enum class EnergyFilter  : uint8_t { off, lpf, hpf };
 /** Which edges the energy filter acts on; the other direction passes straight through. */
 enum class EnergyEdge    : uint8_t { both, pos, neg };
 enum class PulseKind     : uint8_t { wheel, shaker, digital, midiIn };
-enum class ModMode       : uint8_t { scale, offset };
+/** What energy is to the wheel: spin force, or its angle. */
+enum class WheelMode     : uint8_t { speed, angle };
 /** How energy moves the shaker's box: a hand shaking it that hard, or the box riding the curve. */
 enum class ShakeMode     : uint8_t { shake, follow };
 enum class GenKind       : uint8_t { arp, input, melody };
@@ -47,8 +48,7 @@ struct Patch
     int          ccNumber  = 1;
 
     PulseKind    pulse     = PulseKind::wheel;
-    /** Per generator: wheel, shaker, digital. */
-    std::array<ModMode, 3> modMode { ModMode::scale, ModMode::scale, ModMode::scale };
+    WheelMode    wheelMode = WheelMode::speed;
     int          digBase   = 2;   // 2, 3, 5 or 7
     ShakeMode    shakeMode = ShakeMode::shake;
 
