@@ -71,6 +71,15 @@ struct EnergyTests final : juce::UnitTest
             lh.step (f, { 0, 0, 1 }, dt, 0, 0, rng);
         expectWithinAbsoluteError (lh.val, 0.5f, 0.01f);
 
+        beginTest ("hpf: a held value settles on ZERO, not on CENTER");
+        {
+            auto z = f; z.center = 0.3f; z.hpfZero = 0.8f;
+            Lfo lz; lz.lp = 0;
+            for (int i = 0; i < 10000; ++i)
+                lz.step (z, { 0, 0, 1 }, dt, 0, 0, rng);
+            expectWithinAbsoluteError (lz.val, 0.8f, 0.01f);
+        }
+
         beginTest ("one-sided: the filter acts on one edge, the other passes straight through");
         EnergySettings e; e.source = EnergySource::cc; e.filter = EnergyFilter::lpf; e.depth = 1; e.filterAmt = 0.5f;
         auto run = [&] (Lfo& x, float target, int ticks) { for (int i = 0; i < ticks; ++i) x.step (e, { 0, 0, target }, dt, 0, 0, rng); };

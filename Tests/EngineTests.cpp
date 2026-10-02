@@ -410,6 +410,26 @@ struct EngineTests final : juce::UnitTest
             expect (s.poly);
         }
 
+        beginTest ("RETRIG restarts the LFO at PHASE, free or synced, mono or poly");
+        for (bool sync : { false, true })
+            for (auto mode : { VoiceMode::mono, VoiceMode::poly })
+                for (float phase : { 0.0f, 0.5f })
+                {
+                    Rig r;
+                    r.patch.voiceMode = mode;
+                    r.patch.enShape = Shape::saw;
+                    r.patch.enSync = sync;
+                    r.patch.enRetrig = true;
+                    r.pv[P::enRate] = 0.02f;
+                    r.pv[P::enCenter] = 0.5f; r.pv[P::enDepth] = 1;
+                    r.pv[P::enPhase] = phase;
+                    r.noteOn (0.3, 60);
+                    r.run (0.32);
+                    UiSnapshot s;
+                    r.e.fillSnapshot (s);
+                    expectWithinAbsoluteError (s.views[0].energyRaw, phase, 0.02f);
+                }
+
         beginTest ("audio source: input RMS is the energy, mono or stereo");
         for (int channels : { 1, 2 })
         {

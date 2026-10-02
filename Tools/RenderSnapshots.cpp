@@ -131,6 +131,9 @@ int main (int argc, char** argv)
         h.p.gen = GenKind::input;
         h.p.tfMode = TransformMode::set;
         h.p.enSync = true;
+        h.p.enRetrig = true;
+        h.p.enFilter = EnergyFilter::hpf;
+        h.pv[P::enHpfZero] = 0.7f;
         h.pv[P::tfOctave] = 4.25f;
     }, { 60, 64, 67 });
     render (dir, "midiin-held-nowrap", [] (FakeHost& h) {

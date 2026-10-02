@@ -13,6 +13,9 @@ const std::array<ParamSpec, numParams>& params()
         { "en_center",  "Energy center",            "CENTER",  0, 1,  0.5f, 0, Fmt::plain },
         { "en_depth",   "Energy depth",             "DEPTH",   0, 1,  0.7f, 0, Fmt::plain },
         { "en_filter",  "Energy filter time",       "INERTIA", 0, 1,  0.3f, 0, Fmt::filterTime },
+        // RETRIG's start phase, and where the HPF's output rests.
+        { "en_phase",   "Energy start phase",       "PHASE",   0, 1,  0, 0, Fmt::degrees },
+        { "en_hpf_zero", "Energy HPF zero",         "ZERO",    0, 1,  0.5f, 0, Fmt::plain },
         { "wh_speed",   "Wheel speed",              "SPEED",   0.05f, 2, 0.7f, 0, Fmt::plain },
         { "wh_slices",  "Wheel slices",             "SLICES",  3, 24, 12, 1, Fmt::integer },
         { "sh_agitate", "Shaker agitation",         "AGITATE", 0, 1,  1, 0, Fmt::plain },
@@ -53,6 +56,7 @@ std::string format (P p, float v, int context)
         case Fmt::times:      std::snprintf (b, sizeof b, "\xc3\x97%.2f", (double) v); break;
         case Fmt::semitones:  std::snprintf (b, sizeof b, "%dst", (int) std::lround (v)); break;
         case Fmt::filterTime: std::snprintf (b, sizeof b, "%.2fs", 0.02 + (double) (v * v) * 3.0); break;
+        case Fmt::degrees:    std::snprintf (b, sizeof b, "%d\xc2\xb0", (int) std::lround (v * 360)); break;
         case Fmt::syncDiv:    return syncLabels[std::clamp ((int) std::lround (v), 0, 7)];
         case Fmt::gridDiv:    std::snprintf (b, sizeof b, "1/%d", context * (1 << std::clamp ((int) std::lround (v), 0, 4))); break;
     }

@@ -13,7 +13,7 @@ namespace mdt
 {
 enum class P
 {
-    enRate, enDiv, enCenter, enDepth, enFilterAmt,
+    enRate, enDiv, enCenter, enDepth, enFilterAmt, enPhase, enHpfZero,
     whSpeed, whSlices, shAgitate, shBalls, shBounce, dgDiv, dgSwing,
     whModOffset, whModScale, shModOffset, shModScale, dgModOffset, dgModScale,
     melLength,
@@ -23,7 +23,7 @@ enum class P
 };
 inline constexpr int numParams = (int) P::count;
 
-enum class Fmt { plain, integer, hertz, ms, percent, times, syncDiv, gridDiv, semitones, filterTime };
+enum class Fmt { plain, integer, hertz, ms, percent, times, syncDiv, gridDiv, semitones, filterTime, degrees };
 
 struct ParamSpec
 {

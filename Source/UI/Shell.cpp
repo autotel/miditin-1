@@ -75,6 +75,7 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
         [] (float v) { return juce::String ((int) v); });
     add (*ccNumber);
     row (enAmount, P::enFilterAmt);
+    row (enPhase, P::enPhase);
 
     // pulse
     for (juce::Component* c : std::initializer_list<juce::Component*> { &pulseKind, &kickBtn, &digBase, &energyMode, &midiInSource, &clockDiv }) add (*c);
@@ -290,13 +291,19 @@ void Shell::layoutControls()
             syncBtn.setBounds (r.removeFromLeft ((r.getWidth() - gap) / 2));
             retrigBtn.setBounds (r.withTrimmedLeft (gap));
         }
+        show (*enPhase, osc && p.enRetrig);
+        if (osc && p.enRetrig)
+            enPhase->setBounds (st.next (rowH));
         if (cc)
             ccNumber->setBounds (st.next (rowH));
         labelled (st, "FILTER", enFilter, Segmented::heightFor (1, 3));
-        show (enEdge, p.enFilter != EnergyFilter::off);
-        if (p.enFilter != EnergyFilter::off)
+        const bool filtered = p.enFilter != EnergyFilter::off;
+        show (enEdge, filtered); show (*enAmount, filtered);
+        if (filtered)
+        {
             enEdge.setBounds (st.next (Segmented::heightFor (1, 3)));
-        enAmount->setBounds (st.next (rowH));
+            enAmount->setBounds (st.next (rowH));
+        }
     }
 
     // PULSE
@@ -420,7 +427,8 @@ views::Frame Shell::frame() const
     f.numHistories = numHistories;
     f.flow = flow;
     f.energyHover = drag.mode == Drag::rate ? "rate" : drag.mode == Drag::mid ? "mid"
-                  : drag.mode == Drag::top ? "top" : drag.mode == Drag::bot ? "bot" : energyHover;
+                  : drag.mode == Drag::top ? "top" : drag.mode == Drag::bot ? "bot"
+                  : drag.mode == Drag::zero ? "zero" : energyHover;
     return f;
 }
 
@@ -618,6 +626,7 @@ juce::String Shell::energyZone (juce::Point<float> l) const
     }
     const float v = G.v (l.y), c = host.param (P::enCenter), dep = host.param (P::enDepth);
     const float b0 = juce::jlimit (0.0f, 1.0f, c - dep / 2), b1 = juce::jlimit (0.0f, 1.0f, c + dep / 2);
+    if (patch.enFilter == EnergyFilter::hpf && std::abs (v - host.param (P::enHpfZero)) < 0.04f) return "zero";
     if (std::abs (v - b1) < 0.06f) return "top";
     if (std::abs (v - b0) < 0.06f) return "bot";
     if (v > b0 && v < b1) return "mid";
@@ -686,6 +695,11 @@ void Shell::mouseDown (const juce::MouseEvent& e)
             drag.x0 = l.x;
             drag.n0 = views::EnergyGeo::rateN (patch, frame().pv);
             host.beginGesture (patch.enSync ? P::enDiv : P::enRate);
+        }
+        else if (z == "zero")
+        {
+            drag.mode = Drag::zero;
+            host.beginGesture (P::enHpfZero);
         }
         else if (z.isNotEmpty())
         {
@@ -817,6 +831,8 @@ void Shell::mouseDrag (const juce::MouseEvent& e)
         if (patch.enSync) host.setParam (P::enDiv, std::round (n * 7));
         else host.setParam (P::enRate, 0.02f * std::pow (150.0f, n));
     }
+    else if (drag.mode == Drag::zero)
+        host.setParam (P::enHpfZero, juce::jlimit (0.0f, 1.0f, v));
     else if (drag.mode == Drag::mid)
         host.setParam (P::enCenter, juce::jlimit (0.0f, 1.0f, drag.base0 + v - drag.v0));
     else
@@ -830,6 +846,7 @@ void Shell::mouseUp (const juce::MouseEvent&)
     {
         case Drag::rate: host.endGesture (patch.enSync ? P::enDiv : P::enRate); break;
         case Drag::mid:  host.endGesture (P::enCenter); break;
+        case Drag::zero: host.endGesture (P::enHpfZero); break;
         case Drag::top:
         case Drag::bot:  host.endGesture (P::enDepth); break;
         case Drag::none:

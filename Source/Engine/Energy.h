@@ -23,6 +23,7 @@ struct EnergySettings
     float  rateHz = 0.12f;
     float  center = 0.5f, depth = 0.7f;
     float  filterAmt = 0.3f;
+    float  hpfZero = 0.5f;   // where the HPF's output rests, instead of CENTER
 };
 
 /** What the non-oscillator sources follow, per chain. */
@@ -81,11 +82,10 @@ struct Lfo
             lp = l;
         else
             lp += (l - lp) * (float) (1.0 - std::exp (-dt / tau));
-        const float v = s.filter == EnergyFilter::lpf ? lp
-                      : s.filter == EnergyFilter::hpf ? std::clamp (0.5f + (l - lp) * 2.5f, 0.0f, 1.0f)
-                                                      : l;
         raw = std::clamp (s.center + (l - 0.5f) * s.depth, 0.0f, 1.0f);
-        val = std::clamp (s.center + (v - 0.5f) * s.depth, 0.0f, 1.0f);
+        val = s.filter == EnergyFilter::hpf ? std::clamp (s.hpfZero + std::clamp ((l - lp) * 2.5f, -0.5f, 0.5f) * s.depth, 0.0f, 1.0f)
+            : s.filter == EnergyFilter::lpf ? std::clamp (s.center + (lp - 0.5f) * s.depth, 0.0f, 1.0f)
+                                            : raw;
     }
 };
 } // namespace mdt

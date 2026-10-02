@@ -227,6 +227,12 @@ void drawEnergy (juce::Graphics& g, const Frame& f)
         line (g, { xl, G.y (b0) }, { xr, G.y (b0) }, hover == "bot" ? 2.0f : 1.0f);
         g.setColour (theme::muted);
         stroke (g, dashed (segment ({ xl, G.y (center) }, { xr, G.y (center) }), 2, 3), 1);
+        if (p.enFilter == EnergyFilter::hpf)   // where the HPF's output rests; dragged
+        {
+            const float yz = G.y (f.pv[P::enHpfZero]);
+            g.setColour (theme::accent);
+            stroke (g, dashed (segment ({ xl, yz }, { xr, yz }), 5, 3), hover == "zero" ? 2.0f : 1.0f);
+        }
     }
 
     {

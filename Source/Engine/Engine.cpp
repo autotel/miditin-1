@@ -120,6 +120,7 @@ void Engine::process (const Patch& nextPatch, const ParamValues& values, const T
     energySettings.center = pv[P::enCenter];
     energySettings.depth = pv[P::enDepth];
     energySettings.filterAmt = pv[P::enFilterAmt];
+    energySettings.hpfZero = pv[P::enHpfZero];
     rebuild();
 
     bpm = tr.bpm > 0 ? tr.bpm : (double) pv[P::bpm];
@@ -215,8 +216,7 @@ void Engine::inputNoteOn (int n, float vel, juce::MidiBuffer& out, int pos)
     global.in.note = noteToEnergy (n);
     if (patch.enRetrig && patch.enSource == EnergySource::osc)
     {
-        global.lfo.ph = 0;
-        global.lfoOff = clock;
+        restartLfo (global);
         global.lfo.sh = global.rng.uniform();
     }
 
@@ -284,10 +284,18 @@ Chain& Engine::claimVoice (int n, juce::MidiBuffer& out, int pos)
         v.lfo.sh = global.lfo.sh;
     }
     v.lfo.lp = global.lfo.lp;
-    v.lfoOff = patch.enRetrig ? clock : global.lfoOff;
+    v.lfoOff = global.lfoOff;
+    if (patch.enRetrig)
+        restartLfo (v);
     v.wheel.a = v.rng.uniform() * twoPi;
     v.digital.beat = clock;
     return v;
+}
+
+void Engine::restartLfo (Chain& c)
+{
+    c.lfo.ph = pv[P::enPhase];
+    c.lfoOff = clock - c.lfo.ph * syncBeats[std::clamp (pv.i (P::enDiv), 0, 7)];
 }
 
 void Engine::dropVoice (int n, juce::MidiBuffer& out, int pos)

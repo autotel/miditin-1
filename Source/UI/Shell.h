@@ -57,7 +57,7 @@ private:
 
     struct Drag
     {
-        enum Mode { none, rate, mid, top, bot, melDraw, melResize } mode = none;
+        enum Mode { none, rate, mid, top, bot, zero, melDraw, melResize } mode = none;
         float x0 = 0, n0 = 0, v0 = 0, base0 = 0;
         int s = 0, c = 0;
     } drag;
@@ -71,7 +71,7 @@ private:
     Segmented enSource { { "OSC", "VEL", "NOTE", "CC", "AUDIO" }, 5, fonts::buttonSmall };
     Segmented enShape { { "SIN", "TRI", "SAW", "SQR", "S&H" }, 5 };
     BoxButton syncBtn { "SYNC" }, retrigBtn { "RETRIG" };
-    std::unique_ptr<RangeRow> ccNumber, enAmount;
+    std::unique_ptr<RangeRow> ccNumber, enAmount, enPhase;
     Segmented enFilter { { "OFF", "LPF", "HPF" }, 3 };
     Segmented enEdge { { "BOTH", "+ ONLY", "- ONLY" }, 3, fonts::buttonSmall };
     // pulse

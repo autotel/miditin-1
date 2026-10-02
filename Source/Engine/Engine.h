@@ -214,6 +214,8 @@ private:
     void inputNoteOff (int note, juce::MidiBuffer& out, int pos);
     Chain& claimVoice (int note, juce::MidiBuffer& out, int pos);
     void dropVoice (int note, juce::MidiBuffer& out, int pos);
+    /** RETRIG: the chain's LFO starts over at PHASE. */
+    void restartLfo (Chain&);
     void tick (juce::MidiBuffer& out, int pos, double dClock);
     void stepPulse (Chain&, juce::MidiBuffer& out, int pos, double dClock);
     void pulse (Chain&, float strength, juce::MidiBuffer& out, int pos);
