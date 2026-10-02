@@ -9,6 +9,12 @@ Source for every phase: `miditin 1 - spec.md` (§ numbers below) and the v2 prot
 Port behaviour from the prototype; do not reinvent it. Each phase ends with `./build.sh test` green
 and one commit per task.
 
+## Cables (author, 2026-10-02)
+
+- [sonnet] **Cables reach a centre only where there is one.** MIDI-in: the energy cable ends at the
+  circle's left edge, not across its label. Melody: the pulse wire ends at the grid's left edge.
+  Wheel hub, shaker box, arp ring and tone wheel keep their centres; digital is already hidden.
+
 ## Needs the author
 
 - [author] The manual REAPER pass in `wiki/testing.md` -- needs someone at the screen; agents
