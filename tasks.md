@@ -11,19 +11,20 @@ and one commit per task.
 
 ## CC LEARN
 
-### 1. [sonnet] LEARN button for the CC energy source
-Bullet (acf86b0): "to cc mode add a learn button".
-- UI: `BoxButton` "LEARN" beside the `CC #` row (`Shell.cpp`, shown under `EnergySource::cc`
-  only); click arms it ("LEARNING", `setOn (true)`), click again disarms. Arming is editor state,
-  not `Patch`.
-- The audio thread never writes `Patch`: the engine publishes the last CC it consumed in
-  `UiSnapshot` (`lastCc`, plus `ccCount`, a counter bumped per CC) -- only CCs on our input
-  channel (`ours` in `Engine::handle`), and only 0..119 (120..127 are channel-mode messages,
-  `ccNumber`'s range already stops at 119).
-- The editor, while armed, compares `ccCount` with the value it saw when arming; on a change it
-  sets `ccNumber = lastCc` through `edit`, and disarms.
-- Test: engine fills `lastCc`/`ccCount` from an input CC, ignores 120+ and other channels.
-  Snapshot check of the energy panel under CC.
+### 1. [sonnet] LEARN: pick the CC from the last few that arrived
+Bullet (acf86b0, amended in the next filing): a learn button in CC mode that lists the last few
+*different* CCs that arrived, to pick from -- so one busy CC cannot block learning another.
+- Engine: a move-to-front list of the last 4 distinct CC numbers consumed (`ours` in
+  `Engine::handle`, any number, not just `ccNumber`; 0..119 only -- 120..127 are channel-mode
+  messages and `ccNumber` stops at 119). Fixed array, audio thread. Published in `UiSnapshot`
+  (`recentCc`, `recentCcCount`), newest first.
+- The audio thread never writes `Patch`; picking is the editor's `edit`.
+- UI: `BoxButton` "LEARN" beside the `CC #` row (shown under `EnergySource::cc` only); click
+  toggles learning (editor state, not `Patch`). While learning, a row of up to 4 `BoxButton`
+  chips under it shows `recentCc` live ("CC 74"), the current `ccNumber` lit; clicking one sets
+  `ccNumber` and stops learning. Empty list: one muted "move a control" line instead.
+- Test: CCs 1, 74, 1, 11 → list 11 1 74; 120+ and other channels ignored; a fifth distinct
+  number drops the oldest. Snapshot scene under CC with learning on.
 
 ## Open (spec §9) -- not tasks until filed as requirements
 
