@@ -121,21 +121,34 @@ inline void blend (const UiSnapshot& a, const UiSnapshot& b, double t, UiSnapsho
         q.boxY = mix (p.boxY, q.boxY);
         if (std::abs (q.beat - p.beat) < 1)   // not across a relock to the host bar
             q.beat = mix (p.beat, q.beat);
-        // A ball that bounced in between is mirrored across that wall, blended, and folded back,
-        // so it is drawn touching the wall rather than turning short of it.
-        const float R = Shaker::radius, reach = (float) (b.t - a.t);
-        const auto path = [&] (float pa, float pb, float va, float vb) {
-            if (va < 0 && vb > 0 && pb - R < vb * reach) { const float u = mix (pa, 2 * R - pb); return u < R ? 2 * R - u : u; }
-            if (va > 0 && vb < 0 && 1 - R - pb < -vb * reach) { const float u = mix (pa, 2 * (1 - R) - pb); return u > 1 - R ? 2 * (1 - R) - u : u; }
-            return mix (pa, pb);
-        };
+        // A ball that bounced in between is mirrored across the rim's tangent, blended, and folded
+        // back, so it is drawn touching the rim rather than turning short of it.
+        const float lim = 0.5f - Shaker::radius, reach = (float) (b.t - a.t);
         if (p.ballCount == q.ballCount)
             for (int k = 0; k < q.ballCount; ++k)
             {
                 const auto& pb = p.balls[(size_t) k];
                 auto& qb = q.balls[(size_t) k];
-                qb.x = path (pb.x, qb.x, pb.vx, qb.vx);
-                qb.y = path (pb.y, qb.y, pb.vy, qb.vy);
+                float tx = qb.x, ty = qb.y;
+                if (const float d = std::hypot (qb.x - 0.5f, qb.y - 0.5f); d > 0)
+                {
+                    const float ux = (qb.x - 0.5f) / d, uy = (qb.y - 0.5f) / d;
+                    const float outA = pb.vx * ux + pb.vy * uy, inB = -(qb.vx * ux + qb.vy * uy);
+                    if (outA > 0 && inB > 0 && lim - d < inB * reach)
+                    {
+                        tx += 2 * (lim - d) * ux;
+                        ty += 2 * (lim - d) * uy;
+                    }
+                }
+                float mx = mix (pb.x, tx), my = mix (pb.y, ty);
+                if (const float d = std::hypot (mx - 0.5f, my - 0.5f); d > lim)
+                {
+                    const float f = (2 * lim - d) / d;
+                    mx = 0.5f + (mx - 0.5f) * f;
+                    my = 0.5f + (my - 0.5f) * f;
+                }
+                qb.x = mx;
+                qb.y = my;
             }
     }
 }

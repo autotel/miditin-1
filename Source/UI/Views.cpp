@@ -372,30 +372,25 @@ void drawShaker (juce::Graphics& g, const Frame& f)
     // The box drawn where the energy moved it, scaled down to a few px so it stays in the canvas.
     const auto off = [] (float d, float gain) { return juce::jlimit (-6.0f, 6.0f, d * gain); };
     const float S = CH - 4, bx = (CW - S) / 2 + off (s.views[0].boxX, 40), by = 2 + off (s.views[0].boxY, 16), R = Shaker::radius;
+    const float cx = bx + S / 2, cy = by + S / 2, rim = S / 2;
     g.setColour (theme::ink);
-    g.drawRect (bx, by, S, S, 1.5f);
+    g.drawEllipse (bx, by, S, S, 1.5f);
 
+    // A hit lights an arc of the rim, with three sparks flying outward.
     for (int v = 0; v < s.numViews; ++v)
         for (const auto& w : s.views[(size_t) v].walls)
         {
             const float a = 1.0f - (float) (s.t - w.t) / 0.4f;
             if (a <= 0 || a > 1 || w.wall == 0) continue;
-            const float L = 14 + w.speed * 8;
+            const float L = 14 + w.speed * 8, half = L / 2 / rim;
+            const juce::Point<float> n { std::cos (w.pos), std::sin (w.pos) }, tan { -n.y, n.x }, P = juce::Point<float> (cx, cy) + n * rim;
             g.setColour (theme::accentA (a));
-            if (w.wall == 'l' || w.wall == 'r')
-            {
-                const float X = w.wall == 'l' ? bx : bx + S, Y = by + w.pos * S, d = w.wall == 'l' ? -1.0f : 1.0f;
-                line (g, { X, Y - L / 2 }, { X, Y + L / 2 }, 3.5f);
-                for (float o : { -5.0f, 0.0f, 5.0f })
-                    line (g, { X + d * 3, Y + o }, { X + d * (4 + 6 * (1 - a)), Y + o * 1.4f }, 1);
-            }
-            else
-            {
-                const float Y = w.wall == 't' ? by : by + S, X = bx + w.pos * S, d = w.wall == 't' ? -1.0f : 1.0f;
-                line (g, { X - L / 2, Y }, { X + L / 2, Y }, 3.5f);
-                for (float o : { -5.0f, 0.0f, 5.0f })
-                    line (g, { X + o, Y + d * 3 }, { X + o * 1.4f, Y + d * (4 + 6 * (1 - a)) }, 1);
-            }
+            juce::Path arc;   // JUCE's arc angles run clockwise from 12 o'clock
+            arc.addCentredArc (cx, cy, rim, rim, 0, w.pos + juce::MathConstants<float>::halfPi - half,
+                               w.pos + juce::MathConstants<float>::halfPi + half, true);
+            stroke (g, arc, 3.5f);
+            for (float o : { -5.0f, 0.0f, 5.0f })
+                line (g, P + tan * o + n * 3, P + tan * (o * 1.4f) + n * (4 + 6 * (1 - a)), 1);
         }
 
     for (int v = 0; v < s.numViews; ++v)

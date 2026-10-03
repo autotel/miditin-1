@@ -93,6 +93,7 @@ struct Ball
         trailCount = std::min (trailCount + 1, trailLength);
     }
 };
+/** A rim hit: `wall` 'o' once set, `pos` its angle (radians, screen y down). */
 struct WallHit { char wall = 0; float pos = 0, speed = 0; double t = -9; };
 
 struct Shaker
@@ -141,12 +142,8 @@ struct Shaker
         else
         {
             // Smoothed, so a square edge or an S&H jump is a fast move rather than an infinite one.
-            // x sways a full sine over the energy range: not a line through y, so the push turns
-            // as energy moves and the balls cannot settle into vertical lanes.
             const float target = -followTravel * (ag - 0.5f);
-            const float targetX = followSway * (float) std::sin (twoPi * (ag - 0.5f));
             ny = (mode != lastMode ? target : boxY - baseY + (target - (boxY - baseY)) * ease);
-            nx = (mode != lastMode ? targetX : boxX - baseX + (targetX - (boxX - baseX)) * ease);
         }
         // A mode switch changes the box's frame of reference, not where it is: take up the
         // difference in the base, which then drifts home too slowly to push anything.
@@ -196,10 +193,20 @@ struct Shaker
             b.x += b.vx * (float) dt;
             b.y += b.vy * (float) dt;
             b.cool -= (float) dt;
-            if (b.x < R)     { b.x = R;     hit (b, 'l', b.y, std::abs (b.vx)); b.vx =  std::abs (b.vx) * bounce; }
-            if (b.x > 1 - R) { b.x = 1 - R; hit (b, 'r', b.y, std::abs (b.vx)); b.vx = -std::abs (b.vx) * bounce; }
-            if (b.y < R)     { b.y = R;     hit (b, 't', b.x, std::abs (b.vy)); b.vy =  std::abs (b.vy) * bounce; }
-            if (b.y > 1 - R) { b.y = 1 - R; hit (b, 'b', b.x, std::abs (b.vy)); b.vy = -std::abs (b.vy) * bounce; }
+            // The container is round: no wall lines up with the push, so no lane holds a ball.
+            const float dx = b.x - 0.5f, dy = b.y - 0.5f, d = std::hypot (dx, dy), lim = 0.5f - R;
+            if (d > lim)
+            {
+                const float ux = dx / d, uy = dy / d, out = b.vx * ux + b.vy * uy;
+                b.x = 0.5f + ux * lim;
+                b.y = 0.5f + uy * lim;
+                if (out > 0)
+                {
+                    hit (b, 'o', std::atan2 (dy, dx), out);
+                    b.vx -= (1 + bounce) * out * ux;
+                    b.vy -= (1 + bounce) * out * uy;
+                }
+            }
         }
 
         if (++trailTick >= Ball::trailEvery)
@@ -237,7 +244,7 @@ struct Shaker
     }
 
     // ponytail: hand-tuned feel constants; knobs if one setting cannot serve every patch.
-    static constexpr float  gravity = 2.6f, shakeAmp = 0.08f, followTravel = 0.5f, followSway = 0.1f, maxSpeed = 40;
+    static constexpr float  gravity = 2.6f, shakeAmp = 0.08f, followTravel = 0.5f, maxSpeed = 40;
     static constexpr double shakeHz = 4.0, followTau = 0.02, baseTau = 2.0;
 };
 

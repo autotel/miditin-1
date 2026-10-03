@@ -11,14 +11,6 @@ and one commit per task.
 
 ## Round shaker, bigger window
 
-### 1. [opus] Round shaker
-Bullet: the POSITION x sway (16f786e) is no good either; make the shaker round instead. Revert
-the sway. The container becomes a circle (centre 0.5, radius 0.5 in box units): a ball past
-`0.5 - radius` is put back on the rim and its outward normal velocity reflected with `bounce`;
-the outward speed is the hit's strength. `WallHit` keeps `wall = 'o'`, `pos` = the hit's angle.
-`blend` mirrors a bounced ball across the rim's tangent (the square's wall mirroring, round).
-`drawShaker` draws a circle and its flashes as rim arcs. Spec §4 says box: note in history.
-
 ### 2. [sonnet] Default window 130%
 Bullet: the default window should be about 130% of today's (900 wide) -- it starts too small.
 `editorWidth` default and the state-load fallback 900 → 1170 (`PluginProcessor.{h,cpp}`); the
