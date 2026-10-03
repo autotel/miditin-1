@@ -141,8 +141,12 @@ struct Shaker
         else
         {
             // Smoothed, so a square edge or an S&H jump is a fast move rather than an infinite one.
+            // x sways a full sine over the energy range: not a line through y, so the push turns
+            // as energy moves and the balls cannot settle into vertical lanes.
             const float target = -followTravel * (ag - 0.5f);
+            const float targetX = followSway * (float) std::sin (twoPi * (ag - 0.5f));
             ny = (mode != lastMode ? target : boxY - baseY + (target - (boxY - baseY)) * ease);
+            nx = (mode != lastMode ? targetX : boxX - baseX + (targetX - (boxX - baseX)) * ease);
         }
         // A mode switch changes the box's frame of reference, not where it is: take up the
         // difference in the base, which then drifts home too slowly to push anything.
@@ -163,11 +167,6 @@ struct Shaker
 
         const float damp = (float) std::exp (-0.7 * dt);
         const float R = radius;
-        // The box sits tilted by `tilt`: gravity and its push, world-vertical, reach the balls
-        // turned into its frame, so they cannot settle into one vertical bounce together.
-        const float ax = -pushX, ay = -pushY + gravity * (float) dt;
-        const float cs = std::cos (tilt), sn = std::sin (tilt);
-        const float kickX = cs * ax + sn * ay, kickY = -sn * ax + cs * ay;
 
         auto hit = [&] (Ball& b, char w, float pos, float sp)
         {
@@ -186,8 +185,8 @@ struct Shaker
         for (int i = 0; i < count; ++i)
         {
             auto& b = balls[(size_t) i];
-            b.vx += kickX;
-            b.vy += kickY;
+            b.vx -= pushX;
+            b.vy -= pushY - gravity * (float) dt;
             b.vx *= damp;
             b.vy *= damp;
             const float sp = std::hypot (b.vx, b.vy);
@@ -238,8 +237,7 @@ struct Shaker
     }
 
     // ponytail: hand-tuned feel constants; knobs if one setting cannot serve every patch.
-    static constexpr float  gravity = 2.6f, shakeAmp = 0.08f, followTravel = 0.5f, maxSpeed = 40;
-    static constexpr float  tilt = 0.1f;   // radians, clockwise on screen
+    static constexpr float  gravity = 2.6f, shakeAmp = 0.08f, followTravel = 0.5f, followSway = 0.1f, maxSpeed = 40;
     static constexpr double shakeHz = 4.0, followTau = 0.02, baseTau = 2.0;
 };
 

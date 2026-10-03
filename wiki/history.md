@@ -49,6 +49,11 @@ MIDI out, the IN keyboard is a utility.
   A mode switch re-bases the box (its position stays put, the offset drifts home over ~2 s) and
   the shake amplitude eases in over 20 ms: without that, clicking STRENGTH/POSITION or an S&H
   jump teleported the box and fired a burst of notes.
+- **POSITION sways on x; the shaker tilt was reverted** (author: balls "latch to the same
+  vertical positions"). Vertical-only riding left balls in vertical lanes. A 0.1 rad box tilt
+  (8ca7b6a) did not fix it and was undone. Now x = 0.1 x sin (2 pi (energy - 0.5)) beside
+  y: not a line through y, so the push turns as energy moves (slow sine, 6 balls: horizontal
+  share of motion 3% → 72%, wall hits 29 → 573 in 50 s -- POSITION pulses far more than before).
 - **SCALE/OFFSET energy switch removed** (author): it was read as "what energy does", which it
   wasn't, and offset mode only ever added (energy 0..1), so the wheel ran flat out. A brief
   centred-offset fix was replaced by: one mapping, `core * (OFFSET + SCALE * energy)`, plus a
