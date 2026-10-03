@@ -195,6 +195,7 @@ private:
     float cc = 0.5f;
     std::array<int, 4> recentCc {};
     int   recentCcCount = 0;
+    std::array<float, 128> polyAt {};    // poly aftertouch by key
     // ponytail: fixed 30 ms RMS window; a knob if it proves too jumpy or too slow.
     static constexpr double rmsTau = 0.030;
     double meanSquare = 0, msCoef = 0;
@@ -222,6 +223,8 @@ private:
     void applyPatch (const Patch&, juce::MidiBuffer& out);
     void rebuild();
     void handle (const juce::MidiMessage&, juce::MidiBuffer& out, int pos);
+    /** A controller value 0..1 (a CC, or ccPressure / ccBend / ccPolyAt): the CC source, and LEARN's list. */
+    void controlIn (int num, float value) noexcept;
     void inputNoteOn (int note, float vel, int ch, juce::MidiBuffer& out, int pos);
     void inputNoteOff (int note, int ch, juce::MidiBuffer& out, int pos);
     /** Held note `i` is `note` -- on `ch` too in poly, where channels keep notes apart. */

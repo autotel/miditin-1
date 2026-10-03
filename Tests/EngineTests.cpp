@@ -562,6 +562,48 @@ struct EngineTests final : juce::UnitTest
             expect (s.recentCc[0] == 3 && s.recentCc[1] == 2 && s.recentCc[2] == 11 && s.recentCc[3] == 1);
         }
 
+        beginTest ("AT / BEND / POLY AT: each can be the CC source, and LEARN lists them");
+        for (int src : { ccPressure, ccBend, ccPolyAt })
+        {
+            Rig r;
+            r.patch.enSource = EnergySource::cc;
+            r.patch.ccNumber = src;
+            r.noteOn (0.0, 60);
+            r.at (0.01, juce::MidiMessage::channelPressureChange (1, src == ccPressure ? 127 : 0));
+            r.at (0.01, juce::MidiMessage::pitchWheel (1, src == ccBend ? 16383 : 0));
+            r.at (0.01, juce::MidiMessage::aftertouchChange (1, 60, src == ccPolyAt ? 127 : 0));
+            r.run (0.05);
+            UiSnapshot s;
+            r.e.fillSnapshot (s);
+            expectWithinAbsoluteError (s.cc, 1.0f, 1e-4f);
+            expectEquals (s.recentCcCount, 3);
+            expect (s.recentCc[0] == ccPolyAt && s.recentCc[1] == ccBend && s.recentCc[2] == ccPressure);
+        }
+
+        beginTest ("POLY AT in poly: each voice follows its own key's pressure");
+        {
+            Rig r;
+            r.patch.voiceMode = VoiceMode::poly;
+            r.patch.enSource = EnergySource::cc;
+            r.patch.ccNumber = ccPolyAt;
+            r.pv[P::enCenter] = 0.5f; r.pv[P::enDepth] = 1;
+            r.noteOn (0.0, 60);
+            r.noteOn (0.0, 64);
+            r.at (0.01, juce::MidiMessage::aftertouchChange (1, 60, 127));
+            r.at (0.01, juce::MidiMessage::aftertouchChange (1, 64, 0));
+            r.run (0.1);
+            UiSnapshot s;
+            r.e.fillSnapshot (s);
+            expectEquals (s.numViews, 2);
+            float lo = 1, hi = 0;
+            for (int i = 0; i < s.numViews; ++i)
+            {
+                lo = std::min (lo, s.views[(size_t) i].energyRaw);
+                hi = std::max (hi, s.views[(size_t) i].energyRaw);
+            }
+            expect (hi > 0.9f && lo < 0.1f);
+        }
+
         beginTest ("CH: OMNI poly keeps each voice's channel; a set channel plays only its own");
         {
             Rig r;

@@ -46,7 +46,8 @@ struct FakeHost final : Host
     {
         juce::MidiBuffer in, out;
         for (int n : notes) in.addEvent (juce::MidiMessage::noteOn (1, n, (juce::uint8) 100), 0);
-        for (int n : ccs) in.addEvent (juce::MidiMessage::controllerEvent (1, n, 64), 0);
+        for (int n : ccs)
+            in.addEvent (n == ccPolyAt ? juce::MidiMessage::aftertouchChange (1, 60, 64) : juce::MidiMessage::controllerEvent (1, n, 64), 0);
         const int block = 800;   // 60 frames a second at 48 kHz
         for (double t = 0; t < seconds; t += block / 48000.0)
         {
@@ -156,7 +157,7 @@ int main (int argc, char** argv)
     render (dir, "cc-learn", [] (FakeHost& h) {
         h.p.enSource = EnergySource::cc;
         h.p.ccNumber = 74;
-        h.ccs = { 1, 74, 11 };
+        h.ccs = { 1, 74, ccPolyAt };
         h.learn = true;
     }, { 60, 64, 67 });
     render (dir, "audio-gain", [] (FakeHost& h) {

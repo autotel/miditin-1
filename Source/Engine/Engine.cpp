@@ -205,21 +205,17 @@ void Engine::handle (const juce::MidiMessage& m, juce::MidiBuffer& out, int pos)
         inputNoteOff (m.getNoteNumber(), ch, out, pos);
     else if (m.isAllNotesOff() || m.isAllSoundOff())
         releaseHeld (out, pos);
-    else if (m.isController())
+    else if (m.isController() && m.getControllerNumber() < 120)   // 120..127: channel-mode messages
+        controlIn (m.getControllerNumber(), (float) m.getControllerValue() / 127.0f);
+    else if (m.isChannelPressure())
+        controlIn (ccPressure, (float) m.getChannelPressureValue() / 127.0f);
+    else if (m.isPitchWheel())
+        controlIn (ccBend, (float) m.getPitchWheelValue() / 16383.0f);
+    else if (m.isAftertouch())
     {
-        const int num = m.getControllerNumber();
-        if (num == patch.ccNumber)
-            cc = (float) m.getControllerValue() / 127.0f;
-        if (num < 120)   // 120..127 are channel-mode messages, never a CC source
-        {
-            // Move to front: a busy CC keeps its one place, so it cannot crowd the others out.
-            int i = 0;
-            while (i < recentCcCount && recentCc[(size_t) i] != num) ++i;
-            if (i == recentCcCount && recentCcCount < (int) recentCc.size()) ++recentCcCount;
-            for (int k = std::min (i, (int) recentCc.size() - 1); k > 0; --k)
-                recentCc[(size_t) k] = recentCc[(size_t) k - 1];
-            recentCc[0] = num;
-        }
+        const float v = (float) m.getAfterTouchValue() / 127.0f;
+        polyAt[(size_t) m.getNoteNumber()] = v;
+        controlIn (ccPolyAt, v);   // mono: the latest key's pressure
     }
     else if (m.isMidiStart())
         clockCount = 0;
@@ -241,9 +237,23 @@ void Engine::handle (const juce::MidiMessage& m, juce::MidiBuffer& out, int pos)
     }
 }
 
+void Engine::controlIn (int num, float value) noexcept
+{
+    if (num == patch.ccNumber)
+        cc = value;
+    // Move to front: a busy controller keeps its one place, so it cannot crowd the others out.
+    int i = 0;
+    while (i < recentCcCount && recentCc[(size_t) i] != num) ++i;
+    if (i == recentCcCount && recentCcCount < (int) recentCc.size()) ++recentCcCount;
+    for (int k = std::min (i, (int) recentCc.size() - 1); k > 0; --k)
+        recentCc[(size_t) k] = recentCc[(size_t) k - 1];
+    recentCc[0] = num;
+}
+
 void Engine::inputNoteOn (int n, float vel, int ch, juce::MidiBuffer& out, int pos)
 {
     global.in.vel = vel;
+    polyAt[(size_t) n] = 0;   // a key's pressure starts from nothing
     for (int i = 0; i < numHeld; ++i)
         if (heldMatches (i, n, ch))
             return;
@@ -429,7 +439,9 @@ void Engine::tick (juce::MidiBuffer& out, int pos, double dClock)
     }
 
     forEachRunningChain ([&] (Chain& c) {
-        const EnergyInputs cin { c.in.vel, c.in.note, cc, audioLevel };
+        // Poly + POLY AT: each voice follows its own key's pressure.
+        const bool ownKey = poly() && patch.ccNumber == ccPolyAt && c.note >= 0;
+        const EnergyInputs cin { c.in.vel, c.in.note, ownKey ? polyAt[(size_t) c.note] : cc, audioLevel };
         c.lfo.step (energySettings, cin, dt, clock, c.lfoOff, c.rng);
         c.energy = c.lfo.val;
         stepPulse (c, out, pos, dClock);

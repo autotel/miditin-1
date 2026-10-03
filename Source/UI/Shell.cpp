@@ -81,10 +81,10 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
     enFilter.onChange = [this] (int i) { edit ([i] (Patch& p) { p.enFilter = (EnergyFilter) i; }); };
     enEdge.padY = 3;
     enEdge.onChange = [this] (int i) { edit ([i] (Patch& p) { p.enEdge = (EnergyEdge) i; }); };
-    ccNumber = std::make_unique<RangeRow> ("CC #", 0.0f, 119.0f, 1.0f,
+    ccNumber = std::make_unique<RangeRow> ("CC #", 0.0f, (float) ccPolyAt, 1.0f,
         [this] { return (float) patch.ccNumber; },
         [this] (float v) { edit ([v] (Patch& p) { p.ccNumber = (int) v; }); },
-        [] (float v) { return juce::String ((int) v); });
+        [] (float v) { return (int) v < ccPressure ? juce::String ((int) v) : ccName ((int) v); });
     add (*ccNumber);
     add (learnBtn);
     learnBtn.setComponentID ("learn");   // the snapshot tool presses it
@@ -288,7 +288,7 @@ void Shell::refreshCcPicks()
         ccPicks[i]->setVisible (on && i < n);
         if (i < n)
         {
-            ccPicks[i]->setText ("CC " + juce::String (snap->recentCc[(size_t) i]));
+            ccPicks[i]->setText (ccName (snap->recentCc[(size_t) i]));
             ccPicks[i]->setOn (snap->recentCc[(size_t) i] == patch.ccNumber);
         }
     }

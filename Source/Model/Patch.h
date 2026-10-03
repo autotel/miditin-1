@@ -34,6 +34,13 @@ enum class RunMode       : uint8_t { free, resetOnIn };
 enum class TransformMode : uint8_t { scale, set, held };
 enum class ScaleType     : uint8_t { major, minor, dorian, phrygian, pentMajor, pentMinor, wholeTone, chromatic };
 
+/** `Patch::ccNumber` past the CCs (which stop at 119): the other controller messages. */
+inline constexpr int ccPressure = 120, ccBend = 121, ccPolyAt = 122;
+inline juce::String ccName (int n)
+{
+    return n == ccPressure ? "AT" : n == ccBend ? "BEND" : n == ccPolyAt ? "P.AT" : "CC " + juce::String (n);
+}
+
 inline constexpr int maxArpTones = 16;
 inline constexpr int melodySteps = 16;
 /** Melody cells: a tone -7..+7, or one of these. */
@@ -54,7 +61,7 @@ struct Patch
     bool         enRetrig  = false;
     EnergyFilter enFilter  = EnergyFilter::off;
     EnergyEdge   enEdge    = EnergyEdge::both;
-    int          ccNumber  = 1;
+    int          ccNumber  = 1;   // 0..119, or ccPressure / ccBend / ccPolyAt
 
     PulseKind    pulse     = PulseKind::wheel;
     WheelMode    wheelMode = WheelMode::speed;

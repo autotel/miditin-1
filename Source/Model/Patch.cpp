@@ -134,7 +134,7 @@ Patch Patch::fromXml (const juce::XmlElement& x)
     p.enRetrig = x.getBoolAttribute ("enRetrig", p.enRetrig);
     getEnum (x, "enFilter", p.enFilter, filterNames);
     getEnum (x, "enEdge", p.enEdge, edgeNames);
-    p.ccNumber = juce::jlimit (0, 119, x.getIntAttribute ("ccNumber", p.ccNumber));
+    p.ccNumber = juce::jlimit (0, ccPolyAt, x.getIntAttribute ("ccNumber", p.ccNumber));
     getEnum (x, "pulse", p.pulse, pulseNames);
     getEnum (x, "wheelMode", p.wheelMode, wheelNames);
     getEnum (x, "shakeMode", p.shakeMode, shakeNames);
