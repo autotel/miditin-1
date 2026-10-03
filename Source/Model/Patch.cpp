@@ -97,6 +97,7 @@ juce::XmlElement Patch::toXml() const
     putEnum (x, "midiInSource", midiInSource, midiInNames);
     x.setAttribute ("clockDiv", clockDiv);
     putEnum (x, "clockStart", clockStart, startNames);
+    x.setAttribute ("legato", legato);
     putEnum (x, "gen", gen, genNames);
     putEnum (x, "order", order, orderNames);
     x.setAttribute ("arp", arpText());
@@ -140,6 +141,7 @@ Patch Patch::fromXml (const juce::XmlElement& x)
     getEnum (x, "midiInSource", p.midiInSource, midiInNames);
     p.clockDiv = juce::jlimit (0, 5, x.getIntAttribute ("clockDiv", p.clockDiv));
     getEnum (x, "clockStart", p.clockStart, startNames);
+    p.legato = x.getBoolAttribute ("legato", p.legato);
     const int base = x.getIntAttribute ("digBase", p.digBase);
     if (base == 2 || base == 3 || base == 5 || base == 7)
         p.digBase = base;

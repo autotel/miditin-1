@@ -98,7 +98,7 @@ private:
     BoxButton wrapBtn { "" };
     Segmented scale { { "major", "minor", "dorian", "phryg", "pent+", "pent-", "whole", "chrom" }, 4, fonts::buttonSmall };
     // in / out
-    BoxButton releaseBtn { "RELEASE ALL" };
+    BoxButton releaseBtn { "RELEASE ALL" }, legatoBtn { "LEGATO" };
     std::unique_ptr<RangeRow> gate;
     std::array<std::unique_ptr<RangeRow>, 3> vel;   // VELOCITY: energy, pulse, input
 

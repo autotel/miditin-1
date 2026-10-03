@@ -146,6 +146,7 @@ int main (int argc, char** argv)
         h.p.pulse = PulseKind::midiIn;
         h.p.midiInSource = MidiInSource::clock;
         h.p.clockDiv = 4;
+        h.p.clockStart = ClockStart::note;   // shows START and LEGATO
     }, { 57, 60, 64 });
     render (dir, "audio-gain", [] (FakeHost& h) {
         h.p.enSource = EnergySource::audio;

@@ -148,6 +148,8 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
     // in / out
     add (releaseBtn);
     releaseBtn.onClick = [this] { host.releaseHeld(); };
+    add (legatoBtn);
+    legatoBtn.onClick = [this] { edit ([] (Patch& p) { p.legato = ! p.legato; }); };
     row (gate, P::gate, 30, 40);
     gate->valueLeft = true;
     for (int i = 0; i < 3; ++i)
@@ -221,6 +223,8 @@ void Shell::syncControls()
     syncBtn.setOn (p.enSync);
     retrigBtn.setText (p.enRetrig ? "RETRIG ON" : "RETRIG OFF");
     retrigBtn.setOn (p.enRetrig);
+    legatoBtn.setText (p.legato ? "LEGATO ON" : "LEGATO OFF");
+    legatoBtn.setOn (p.legato);
     enFilter.setSelected ((int) p.enFilter);
     enEdge.setSelected ((int) p.enEdge);
     enAmount->setLabel (p.enFilter == EnergyFilter::hpf ? "WINDOW" : "INERTIA");
@@ -420,7 +424,12 @@ void Shell::layoutControls()
     {
         const int y = bottomTop + 48 + (int) views::KH + 7;
         releaseBtn.setBounds (450 - pad - 80, y, 80, buttonH);
-        inHeldArea = juce::Rectangle<float> ((float) pad, (float) y, 450.0f - 2 * pad - 88, (float) buttonH);
+        // LEGATO only where it governs something: RETRIG, or the clock started by the note.
+        const bool legato = (p.enSource == EnergySource::osc && p.enRetrig)
+                         || (p.pulse == PulseKind::midiIn && p.midiInSource == MidiInSource::clock && p.clockStart == ClockStart::note);
+        show (legatoBtn, legato);
+        legatoBtn.setBounds (450 - pad - 2 * 80 - 8, y, 80, buttonH);
+        inHeldArea = juce::Rectangle<float> ((float) pad, (float) y, 450.0f - 2 * pad - (legato ? 176 : 88), (float) buttonH);
         logArea = juce::Rectangle<float> (450.0f + pad, (float) y, 450.0f - 2 * pad, (float) buttonH);
 
         // GATE and VELOCITY: what shapes the output, just above the OUT title, under the

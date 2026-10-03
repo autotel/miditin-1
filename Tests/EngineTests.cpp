@@ -199,6 +199,7 @@ struct EngineTests final : juce::UnitTest
             p.patch.midiInSource = MidiInSource::clock;
             p.patch.clockStart = ClockStart::note;
             p.patch.clockDiv = 3;
+            p.patch.legato = false;   // each voice counts from its own note
             p.pv[P::bpm] = 120;
             p.noteOn (0.0, 60);
             p.noteOn (0.06, 67);
@@ -484,6 +485,61 @@ struct EngineTests final : juce::UnitTest
                     r.e.fillSnapshot (s);
                     expectWithinAbsoluteError (s.views[0].energyRaw, phase, 0.02f);
                 }
+
+        beginTest ("LEGATO: a note under a held note continues the LFO; off, or after a gap, it restarts");
+        {
+            // Saw at 0.2 Hz from PHASE 0: a second note at 1.3 reads ~0.2 if it continued, ~0 if it restarted.
+            auto lowest = [] (bool legato, VoiceMode mode, bool gap) {
+                Rig r;
+                r.patch.voiceMode = mode;
+                r.patch.legato = legato;
+                r.patch.enShape = Shape::saw;
+                r.patch.enRetrig = true;
+                r.pv[P::enRate] = 0.2f;
+                r.pv[P::enCenter] = 0.5f; r.pv[P::enDepth] = 1;
+                r.pv[P::enPhase] = 0;
+                r.noteOn (0.3, 60);
+                if (gap) r.noteOff (0.8, 60);
+                r.noteOn (1.3, 64);
+                r.run (1.32);
+                UiSnapshot s;
+                r.e.fillSnapshot (s);
+                float lo = 1;
+                for (int i = 0; i < s.numViews; ++i) lo = std::min (lo, s.views[(size_t) i].energyRaw);
+                return lo;
+            };
+            for (auto mode : { VoiceMode::mono, VoiceMode::poly })
+            {
+                expectGreaterThan (lowest (true, mode, false), 0.15f);
+                expectLessThan (lowest (false, mode, false), 0.05f);
+                expectLessThan (lowest (true, mode, true), 0.05f);
+            }
+        }
+
+        beginTest ("LEGATO: a note under a held note joins the note clock; off, it starts the count over");
+        for (bool legato : { true, false })
+            for (auto mode : { VoiceMode::mono, VoiceMode::poly })
+            {
+                Rig r;
+                r.patch.voiceMode = mode;
+                r.patch.legato = legato;
+                r.patch.pulse = PulseKind::midiIn;
+                r.patch.midiInSource = MidiInSource::clock;
+                r.patch.clockStart = ClockStart::note;
+                r.patch.clockDiv = 3;   // 1/16: 0.125 s at 120 bpm
+                r.pv[P::bpm] = 120;
+                r.noteOn (0.0, 60);
+                r.noteOn (0.06, 64);    // off the first note's grid
+                r.run (0.47);
+                bool offGrid = false;
+                for (auto& ev : r.out)
+                    if (ev.vel > 0)
+                    {
+                        const double a = std::fmod (ev.time + 0.01, 0.125) - 0.01;
+                        offGrid = offGrid || std::abs (a) > 0.003;
+                    }
+                expect (offGrid != legato);
+            }
 
         beginTest ("CH: OMNI poly keeps each voice's channel; a set channel plays only its own");
         {

@@ -75,6 +75,10 @@ are routing; automating them mid-note is how notes hang. This keeps the rule one
 - **HPF zero** (`en_hpf_zero`): the HPF output rests on its own level, a dashed line dragged in
   the plot, instead of on CENTER (equal at the 0.5 defaults).
 - **RETRIG start phase** (`en_phase`): RETRIG restarts the LFO there, free or synced.
+- **LEGATO** (`Patch::legato`, default on): a note-on restarts the LFO (RETRIG) and the note clock
+  (START = NOTE) only when nothing else is held; under a held note it continues them, and a poly
+  voice inherits the global chain's phase and clock count. Off: every note restarts. RESET ON IN
+  is not governed by it.
 - **AUDIO source**: an optional mono/stereo input bus is measured, never passed through. The
   engine tracks mean square per sample (30 ms one-pole, channels averaged) and each tick reads
   `sqrt` of it times GAIN (`en_gain`, ×1..×100, clamped to 1), as the energy input — one level

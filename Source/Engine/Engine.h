@@ -222,7 +222,8 @@ private:
     void inputNoteOff (int note, int ch, juce::MidiBuffer& out, int pos);
     /** Held note `i` is `note` -- on `ch` too in poly, where channels keep notes apart. */
     bool heldMatches (int i, int note, int ch) const noexcept;
-    Chain& claimVoice (int note, int ch, juce::MidiBuffer& out, int pos);
+    /** `restart`: the note starts the LFO (under RETRIG) and the note clock over, or LEGATO joins them. */
+    Chain& claimVoice (int note, int ch, bool restart, juce::MidiBuffer& out, int pos);
     void dropVoice (int note, int ch, juce::MidiBuffer& out, int pos);
     /** RETRIG: the chain's LFO starts over at PHASE. */
     void restartLfo (Chain&);

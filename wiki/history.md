@@ -69,3 +69,6 @@ MIDI out, the IN keyboard is a utility.
   always runs (the host's bypass stops it). `bpm` stays a host parameter -- the tempo with no host
   tempo -- just without a control. OUT exists because mono notes trace back to no one input note,
   so under OMNI there is no input channel to follow.
+- **RETRIG restarts on a phrase's first note only, by default** (author: "if any note is
+  continuing, the LFOs and clocks should continue"). Spec §3 says RETRIG restarts "on each
+  incoming note"; LEGATO ON is that default now, LEGATO OFF the spec's behaviour.

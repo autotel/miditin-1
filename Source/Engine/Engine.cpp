@@ -88,9 +88,9 @@ void Engine::applyPatch (const Patch& next, juce::MidiBuffer& out)
         releaseAll (out, 0);
         for (auto& v : voices)
             v.active = false;
-        if (poly())
+        if (poly())   // the held notes go on: under LEGATO their voices join the running LFO and clock
             for (int i = 0; i < numHeld; ++i)
-                claimVoice (held[(size_t) i], heldCh[(size_t) i], out, 0);
+                claimVoice (held[(size_t) i], heldCh[(size_t) i], ! patch.legato, out, 0);
     }
 
     // The old channel's note-offs would now pass through: let go of everything first.
@@ -233,6 +233,8 @@ void Engine::inputNoteOn (int n, float vel, int ch, juce::MidiBuffer& out, int p
     for (int i = 0; i < numHeld; ++i)
         if (heldMatches (i, n, ch))
             return;
+    // LEGATO: a note under a held note continues what is running; only a phrase's first restarts.
+    const bool restart = ! patch.legato || numHeld == 0;
     if (numHeld < (int) held.size())
     {
         heldVel[(size_t) numHeld] = vel;
@@ -243,7 +245,7 @@ void Engine::inputNoteOn (int n, float vel, int ch, juce::MidiBuffer& out, int p
 
     inT = t;
     global.in.note = noteToEnergy (n);
-    if (patch.enRetrig && patch.enSource == EnergySource::osc)
+    if (restart && patch.enRetrig && patch.enSource == EnergySource::osc)
     {
         restartLfo (global);
         global.lfo.sh = global.rng.uniform();
@@ -251,7 +253,7 @@ void Engine::inputNoteOn (int n, float vel, int ch, juce::MidiBuffer& out, int p
 
     Chain* target = &global;
     if (poly())
-        target = &claimVoice (n, ch, out, pos);
+        target = &claimVoice (n, ch, restart, out, pos);
     else if (patch.runMode == RunMode::resetOnIn)
         global.gen.reset();
     if (patch.runMode == RunMode::resetOnIn)
@@ -259,7 +261,7 @@ void Engine::inputNoteOn (int n, float vel, int ch, juce::MidiBuffer& out, int p
 
     if (patch.pulse == PulseKind::midiIn && patch.midiInSource == MidiInSource::notes)
         pulse (*target, global.in.vel > 0 ? global.in.vel : 0.8f, out, pos);
-    else if (noteClock())
+    else if (noteClock() && restart)
     {
         restartClock (global);
         restartClock (*target);
@@ -298,7 +300,7 @@ void Engine::releaseHeld (juce::MidiBuffer& out, int pos)
     rebuild();
 }
 
-Chain& Engine::claimVoice (int n, int ch, juce::MidiBuffer& out, int pos)
+Chain& Engine::claimVoice (int n, int ch, bool restart, juce::MidiBuffer& out, int pos)
 {
     dropVoice (n, ch, out, pos);
     Chain* spot = nullptr;
@@ -319,16 +321,22 @@ Chain& Engine::claimVoice (int n, int ch, juce::MidiBuffer& out, int pos)
     v.age = ++ageCounter;
     v.rng = Rng (seeder.next());
     v.in = { global.in.vel, noteToEnergy (n), 0.5f };
-    // A new voice picks the global LFO up where it is, unless RETRIG restarts it.
-    if (! patch.enRetrig)
+    // A new voice picks the global LFO and note clock up where they are, unless it restarts them.
+    const bool retrig = patch.enRetrig && restart;
+    if (! retrig)
     {
         v.lfo.ph = global.lfo.ph;
         v.lfo.sh = global.lfo.sh;
     }
+    if (! restart)
+    {
+        v.clockTicks = global.clockTicks;
+        v.clockBeats = global.clockBeats;
+    }
     // Under VEL the voice's own note was off until now, energy 0: its filters rise from there.
     v.lfo.lp = patch.enSource == EnergySource::vel ? 0.0f : global.lfo.lp;
     v.lfoOff = global.lfoOff;
-    if (patch.enRetrig)
+    if (retrig)
         restartLfo (v);
     v.wheel.a = v.rng.uniform() * twoPi;
     v.digital.beat = clock;

@@ -61,6 +61,8 @@ struct Patch
     MidiInSource midiInSource = MidiInSource::notes;
     int          clockDiv  = 3;   // index into clockDivTicks: 1/16
     ClockStart   clockStart = ClockStart::clock;
+    /** A note under a held note continues the LFO (RETRIG) and the note clock; off restarts them. */
+    bool         legato    = true;
     int          digBase   = 2;   // 2, 3, 5 or 7
     ShakeMode    shakeMode = ShakeMode::shake;
 
