@@ -1,5 +1,2 @@
 <!-- New requirements go here as plain bullets. Opus converts them into tasks.md and empties this
      file; the git history of these two files is the record of what was asked and delivered. -->
-- When pulse gen is midi in, then the energy is not connected graphically to the pulse generator
-- To midi input pulse generator mode, in clock mode, add an option for note start to mark the start of a midi clock count. consider that a midi note might start at any time; in which case the clock would start measuring from the notes' start.
-- There are two different ways to treat the continuation of an lfo restart or a midi clock restart in relation to one note starting after another note continues: either the clock or lfo re-starts because only one note started, or it continues because another note was continuing. By default, if any note is continuing, the lfo's and clocks should continue. But there should be an option to switch between the two modes.
