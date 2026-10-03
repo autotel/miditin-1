@@ -35,6 +35,8 @@ struct Chain
     Wheel    wheel;
     Shaker   shaker;
     Digital  digital;
+    int      clockTicks = 0;  // START = NOTE: 0xF8 ticks since this chain's note,
+    double   clockBeats = 0;  // ... or beats, while no 0xF8 arrives
     GenPos   gen;
     int      melNote = -1;    // the `slot` of the melody note this chain may be holding through ties
     bool     hasDeg  = false;
@@ -228,6 +230,9 @@ private:
     void stepPulse (Chain&, juce::MidiBuffer& out, int pos, double dClock);
     void pulse (Chain&, float strength, juce::MidiBuffer& out, int pos);
     bool clockPulses() const noexcept { return patch.pulse == PulseKind::midiIn && patch.midiInSource == MidiInSource::clock; }
+    bool noteClock() const noexcept { return clockPulses() && patch.clockStart == ClockStart::note; }
+    /** START = NOTE: the chain's count starts over -- its note is the downbeat. */
+    static void restartClock (Chain& c) noexcept { c.clockTicks = 0; c.clockBeats = 0; }
     void noteOn (int slot, float level, int deg, juce::MidiBuffer& out, int pos);
     void noteOff (int slot, juce::MidiBuffer& out, int pos);
 };

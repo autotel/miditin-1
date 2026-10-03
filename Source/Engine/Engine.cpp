@@ -212,8 +212,17 @@ void Engine::handle (const juce::MidiMessage& m, juce::MidiBuffer& out, int pos)
     else if (m.isMidiClock())
     {
         lastClockT = t;
-        const int tick = clockCount++;
-        if (clockPulses() && tick % clockDivTicks[std::clamp (patch.clockDiv, 0, 5)] == 0)
+        const int tick = clockCount++, div = clockDivTicks[std::clamp (patch.clockDiv, 0, 5)];
+        if (noteClock())
+        {
+            // Each chain counts from its own note; the note's pulse was tick 0, this is tick 1 on.
+            if (poly()) ++global.clockTicks;   // what a legato voice inherits
+            forEachRunningChain ([&] (Chain& c) {
+                if (++c.clockTicks % div == 0)
+                    pulse (c, c.clockTicks % 24 == 0 ? 1.0f : 0.6f, out, pos);
+            });
+        }
+        else if (clockPulses() && tick % div == 0)
             forEachRunningChain ([&] (Chain& c) { pulse (c, tick % 24 == 0 ? 1.0f : 0.6f, out, pos); });
     }
 }
@@ -250,6 +259,12 @@ void Engine::inputNoteOn (int n, float vel, int ch, juce::MidiBuffer& out, int p
 
     if (patch.pulse == PulseKind::midiIn && patch.midiInSource == MidiInSource::notes)
         pulse (*target, global.in.vel > 0 ? global.in.vel : 0.8f, out, pos);
+    else if (noteClock())
+    {
+        restartClock (global);
+        restartClock (*target);
+        pulse (*target, 1.0f, out, pos);
+    }
 }
 
 bool Engine::heldMatches (int i, int n, int ch) const noexcept
@@ -363,7 +378,25 @@ void Engine::tick (juce::MidiBuffer& out, int pos, double dClock)
 
     // CLOCK with no 0xF8 arriving (VST3 delivers none): the host's transport is the clock. A grid
     // point g pulses when it falls in [prev, now) -- so beat 0 at a transport start counts once.
-    if (clockPulses() && wasPlaying && t - lastClockT > 0.5 && dClock > 0 && dClock < 0.5)
+    // START = NOTE needs no transport position: each chain counts the engine's beats from its note,
+    // so it runs with the host stopped too.
+    const bool noClockBytes = clockPulses() && t - lastClockT > 0.5 && dClock > 0 && dClock < 0.5;
+    if (noClockBytes && noteClock())
+    {
+        const int k = 24 / clockDivTicks[std::clamp (patch.clockDiv, 0, 5)];   // cells a beat
+        auto count = [&] (Chain& c) {
+            const auto before = (long long) std::floor (c.clockBeats * k);
+            c.clockBeats += dClock;
+            const auto cell = (long long) std::floor (c.clockBeats * k);
+            return cell > before ? cell : 0;
+        };
+        if (poly()) count (global);   // what a legato voice inherits
+        forEachRunningChain ([&] (Chain& c) {
+            if (const auto cell = count (c))
+                pulse (c, cell % k == 0 ? 1.0f : 0.6f, out, pos);
+        });
+    }
+    else if (noClockBytes && wasPlaying)
     {
         const double k = 24.0 / clockDivTicks[std::clamp (patch.clockDiv, 0, 5)];   // cells a beat
         if (const double g = std::ceil ((clock - dClock) * k); g < clock * k)

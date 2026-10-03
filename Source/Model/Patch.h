@@ -24,6 +24,8 @@ enum class WheelMode     : uint8_t { speed, angle };
 enum class MidiInSource  : uint8_t { notes, clock };
 /** MIDI clock ticks (24 a quarter) per pulse, for each `Patch::clockDiv`: 1/4 1/8 1/8T 1/16 1/16T 1/32. */
 inline constexpr int clockDivTicks[6] { 24, 12, 8, 6, 4, 3 };
+/** Where CLOCK counts from: the clock's own start (0xFA, or the host's bar), or each note's start. */
+enum class ClockStart    : uint8_t { clock, note };
 /** How energy moves the shaker's box: a hand shaking it that hard, or the box riding the curve. */
 enum class ShakeMode     : uint8_t { shake, follow };
 enum class GenKind       : uint8_t { arp, input, melody };
@@ -58,6 +60,7 @@ struct Patch
     WheelMode    wheelMode = WheelMode::speed;
     MidiInSource midiInSource = MidiInSource::notes;
     int          clockDiv  = 3;   // index into clockDivTicks: 1/16
+    ClockStart   clockStart = ClockStart::clock;
     int          digBase   = 2;   // 2, 3, 5 or 7
     ShakeMode    shakeMode = ShakeMode::shake;
 

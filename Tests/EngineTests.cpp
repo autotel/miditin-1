@@ -154,6 +154,65 @@ struct EngineTests final : juce::UnitTest
             expect (vels.size() > 4 && vels[0] == 127 && vels[1] < vels[0] && vels[4] == 127);
         }
 
+        beginTest ("CLOCK START = NOTE: the count starts at the note, with or without 0xF8, stopped or playing");
+        {
+            auto onTimes = [] (const Rig& r) { std::vector<double> v; for (auto& ev : r.out) if (ev.vel > 0) v.push_back (ev.time); return v; };
+            for (bool playing : { false, true })
+            {
+                Rig r;
+                r.patch.pulse = PulseKind::midiIn;
+                r.patch.midiInSource = MidiInSource::clock;
+                r.patch.clockStart = ClockStart::note;
+                r.patch.clockDiv = 3;   // 1/16: 0.125 s at 120 bpm
+                r.pv[P::bpm] = 120;
+                r.tr = { playing, playing, 120, 0 };
+                r.noteOn (0.31, 60);    // off the host's grid
+                r.noteOff (1.30, 60);
+                r.run (1.8);
+                const auto on = onTimes (r);
+                expectEquals ((int) on.size(), 8);
+                for (size_t i = 0; i < on.size(); ++i)
+                    expectWithinAbsoluteError (on[i], 0.31 + (double) i * 0.125, 0.003);
+                std::vector<int> vels;
+                for (auto& ev : r.out) if (ev.vel > 0) vels.push_back (ev.vel);
+                expect (vels[0] == 127 && vels[1] < 127 && vels[4] == 127);   // the note is the downbeat
+                expect (r.balanced());
+            }
+
+            Rig c;
+            c.patch.pulse = PulseKind::midiIn;
+            c.patch.midiInSource = MidiInSource::clock;
+            c.patch.clockStart = ClockStart::note;
+            c.patch.clockDiv = 1;   // 1/8: every 12 ticks
+            for (int i = 0; i < 48; ++i)   // 120 bpm: 24 ticks per 0.5 s
+                c.at (0.1 + i * 0.5 / 24, juce::MidiMessage::midiClock());
+            c.noteOn (0.33, 60);    // between ticks 11 and 12
+            c.run (1.1);
+            const auto on = onTimes (c);
+            expectEquals ((int) on.size(), 4);   // the note, then ticks 12, 24, 36 after it
+            expectWithinAbsoluteError (on[0], 0.33, 0.002);
+            expectWithinAbsoluteError (on[1], 0.1 + 23 * 0.5 / 24, 0.002);   // no second pulse at the first tick
+
+            Rig p;
+            p.patch.voiceMode = VoiceMode::poly;
+            p.patch.pulse = PulseKind::midiIn;
+            p.patch.midiInSource = MidiInSource::clock;
+            p.patch.clockStart = ClockStart::note;
+            p.patch.clockDiv = 3;
+            p.pv[P::bpm] = 120;
+            p.noteOn (0.0, 60);
+            p.noteOn (0.06, 67);
+            p.run (0.47);           // 0..0.375 and 0.06..0.435
+            int onGrid = 0;
+            for (double t : onTimes (p))
+            {
+                const double a = std::fmod (t + 0.01, 0.125) - 0.01, b = std::fmod (t - 0.06 + 0.01, 0.125) - 0.01;
+                onGrid += std::abs (a) < 0.003 || std::abs (b) < 0.003;
+            }
+            expectEquals ((int) onTimes (p).size(), 8);   // each voice on its own grid
+            expectEquals (onGrid, 8);
+        }
+
         beginTest ("melody ties: one note-on held across tied steps, released a gate after the last");
         {
             Rig r;

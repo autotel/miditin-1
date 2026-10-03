@@ -111,3 +111,9 @@ delivers 0xF8 -- so while none has arrived for 0.5 s the host's PPQ is the clock
 playing only), same grid; a grid point counts when it falls in `[prev, now)`, so beat 0 at a
 transport start pulses once. Real clock bytes reach the Standalone from a MIDI device. Clock
 bytes pass through like any non-note.
+
+START = NOTE (`Patch::clockStart`) counts per chain from its note instead: the note-on pulses at
+once (the downbeat), then `Chain::clockTicks` counts 0xF8 from 1 (0xFA ignored), or, without
+0xF8, `Chain::clockBeats` accumulates the engine's guarded `dClock` -- no transport position
+needed, so it runs with the host stopped too. Poly: each voice from its own note; the global
+chain keeps counting so a voice can inherit it.
