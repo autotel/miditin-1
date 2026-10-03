@@ -7,6 +7,7 @@ class MiditinEditor final : public juce::AudioProcessorEditor, private mdt::Host
 {
 public:
     explicit MiditinEditor (MiditinProcessor&);
+    ~MiditinEditor() override;
     void resized() override;
 
     static const atl::PresetFormat& presetFormat();

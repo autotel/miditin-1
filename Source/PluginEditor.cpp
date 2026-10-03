@@ -72,15 +72,19 @@ MiditinEditor::MiditinEditor (MiditinProcessor& p)
     setResizeLimits (Shell::width * 3 / 4, Shell::height * 3 / 4, Shell::width * 5 / 2, Shell::height * 5 / 2);
     getConstrainer()->setFixedAspectRatio ((double) mdt::Shell::width / mdt::Shell::height);
     setResizable (true, true);
-    setSize (proc.editorWidth, proc.editorWidth * mdt::Shell::height / mdt::Shell::width);
+    // The size is the machine's, not the project's: the last one used, in any session.
+    const int w = juce::jlimit (Shell::width * 3 / 4, Shell::width * 5 / 2, settings.getIntValue ("editor.width", 1170));
+    setSize (w, w * Shell::height / Shell::width);
 }
+
+// Saved on close, not per resize step: the settings file writes on every setValue.
+MiditinEditor::~MiditinEditor() { settings.setValue ("editor.width", getWidth()); }
 
 void MiditinEditor::resized()
 {
     // The layout is always built at the design size; one transform carries it to the window.
     shell.setTransform (juce::AffineTransform::scale ((float) getWidth() / mdt::Shell::width));
     shell.setBounds (0, 0, mdt::Shell::width, mdt::Shell::height);
-    proc.editorWidth = getWidth();
 }
 
 void MiditinEditor::applyDocument (const juce::ValueTree& doc)

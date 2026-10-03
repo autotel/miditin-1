@@ -77,3 +77,6 @@ MIDI out, the IN keyboard is a utility.
 - **RETRIG restarts on a phrase's first note only, by default** (author: "if any note is
   continuing, the LFOs and clocks should continue"). Spec §3 says RETRIG restarts "on each
   incoming note"; LEGATO ON is that default now, LEGATO OFF the spec's behaviour.
+- **Editor size is machine-wide** (author: "remember its size between DAW sessions"): it was in each
+  instance's state, so new instances and unsaved projects opened at the default. Now `editor.width`
+  in `~/.config/Autotel/MIDITIN_1/settings.xml`, written when the editor closes.
