@@ -197,7 +197,7 @@ void MiditinProcessor::setStateInformation (const void* data, int size)
     setPatch (p);
     openPresetKey = root["openPresetKey"].toString();
     openPresetName = root["openPresetName"].toString();
-    editorWidth = juce::jlimit (675, 2250, (int) root.getProperty ("editorWidth", 900));
+    editorWidth = juce::jlimit (675, 2250, (int) root.getProperty ("editorWidth", 1170));
     markClean();
 }
 
