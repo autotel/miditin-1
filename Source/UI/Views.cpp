@@ -179,8 +179,8 @@ Anchors anchorsFor (const Frame& f)
         case PulseKind::wheel:   a.pTop = { CW / 2 - 12, CH / 2 - 2 }; a.pOut = { CW / 2 - 12 + CH / 2 - 12 + 13, CH / 2 - 2 }; break;
         case PulseKind::shaker:  a.pTop = { CW / 2, 2 + (CH - 4) / 2 }; a.pOut = { (CW + CH - 4) / 2, 2 + (CH - 4) / 2 }; break;
         case PulseKind::digital: a.pTop = { (30 + CW - 4) / 2, 14 + (CH - 14) / 5 * 2.5f }; a.pOut = { CW, 14 + (CH - 14) / 5 * 2.5f }; break;
-        // The circle's edge: its centre is the label.
-        case PulseKind::midiIn:  a.pTop = { CW / 2 - 26, CH / 2 + 4 }; a.pOut = { CW / 2 + 26, CH / 2 + 4 }; break;
+        // No energy cable: energy drives nothing here. The wire leaves the circle's edge.
+        case PulseKind::midiIn:  a.pOut = { CW / 2 + 26, CH / 2 + 4 }; break;
     }
     // Cables end where a drawing has a centre to reach (wheel hub, box, arp ring, tone wheel), and
     // at the edge where it has none (the MIDI-in label, the melody grid).
@@ -800,7 +800,7 @@ void drawConnections (juce::Graphics& g, const Frame& f, const Anchors& a, bool 
     const auto& s = *f.s;
     const bool cableUnder = f.patch->pulse == PulseKind::digital;
 
-    if (under == cableUnder)
+    if (under == cableUnder && f.patch->pulse != PulseKind::midiIn)
     {
         const float k = s.energy;
         juce::Path bz;

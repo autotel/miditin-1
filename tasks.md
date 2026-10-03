@@ -11,17 +11,7 @@ and one commit per task.
 
 ## MIDI-in pulse and note restarts
 
-Three bullets filed in bd95120, three tasks. Do them in order: 3 builds on 2's per-chain origin.
-
-### 1. [sonnet] No energy cable under MIDI IN
-Bullet: "When pulse gen is midi in, then the energy is not connected graphically to the pulse
-generator." Read as: it *should* not be -- under MIDI IN energy modulates nothing in the pulse
-(`Engine::stepPulse`, `case PulseKind::midiIn: break`), yet `views::drawConnections`
-(`Source/UI/Views.cpp`, the `under == cableUnder` block) still draws the LFO → pulse bezier and its
-end disc to the MIDI-in circle (see `MiditinSnap` scene `midiin-clock`). Skip that block when
-`f.patch->pulse == PulseKind::midiIn`; drop the now-unused `midiIn` `pTop` in `anchorsFor` only if
-nothing else reads it. The pulse → generate wire, the IN dashed line under the circle and the
-energy plot stay. Check with `MiditinSnap` (`midiin-clock`, `midiin-held-nowrap`).
+Bullets filed in bd95120. Do them in order: 3 builds on 2's per-chain origin.
 
 ### 2. [opus] CLOCK: START = NOTE, the count measured from the note
 Bullet: in MIDI-in CLOCK mode, an option for a note's start to mark the start of the clock count;
