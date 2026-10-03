@@ -24,6 +24,8 @@ struct FakeHost final : Host
     UiSnapshot snap;
     uint32_t version = 0;
     std::vector<int> pressed;
+    std::vector<int> ccs;   // controller numbers moved in the first block
+    bool learn = false;     // press LEARN
     double wall = 0;   // simulated display time, one frame per block
 
     FakeHost() { engine.prepare (48000); }
@@ -44,6 +46,7 @@ struct FakeHost final : Host
     {
         juce::MidiBuffer in, out;
         for (int n : notes) in.addEvent (juce::MidiMessage::noteOn (1, n, (juce::uint8) 100), 0);
+        for (int n : ccs) in.addEvent (juce::MidiMessage::controllerEvent (1, n, 64), 0);
         const int block = 800;   // 60 frames a second at 48 kHz
         for (double t = 0; t < seconds; t += block / 48000.0)
         {
@@ -94,6 +97,8 @@ void render (const juce::File& dir, const juce::String& name, const std::functio
     shell.setPresetPanel (&panel);
     shell.setPresetName ("Wheel arpeggio");
     panel.setVisible (presets);
+    if (auto* b = dynamic_cast<BoxButton*> (shell.findChildWithID ("learn")); b != nullptr && host.learn)
+        b->onClick();
     host.run (seconds, shell, notes);
     const int scale = 2;
     juce::Image img (juce::Image::ARGB, Shell::width * scale, Shell::height * scale, true);
@@ -148,6 +153,12 @@ int main (int argc, char** argv)
         h.p.clockDiv = 4;
         h.p.clockStart = ClockStart::note;   // shows START and LEGATO
     }, { 57, 60, 64 });
+    render (dir, "cc-learn", [] (FakeHost& h) {
+        h.p.enSource = EnergySource::cc;
+        h.p.ccNumber = 74;
+        h.ccs = { 1, 74, 11 };
+        h.learn = true;
+    }, { 60, 64, 67 });
     render (dir, "audio-gain", [] (FakeHost& h) {
         h.p.enSource = EnergySource::audio;
         h.pv[P::enGain] = 12;

@@ -541,6 +541,27 @@ struct EngineTests final : juce::UnitTest
                 expect (offGrid != legato);
             }
 
+        beginTest ("CC LEARN: the last distinct CC numbers, newest first, ours only, never 120+");
+        {
+            Rig r;
+            r.patch.inChannel = 1;
+            for (int n : { 1, 74, 1, 11 })
+                r.at (0.01, juce::MidiMessage::controllerEvent (1, n, 64));
+            r.at (0.01, juce::MidiMessage::controllerEvent (2, 20, 64));    // another channel
+            r.at (0.01, juce::MidiMessage::controllerEvent (1, 121, 0));    // reset all controllers
+            r.run (0.05);
+            UiSnapshot s;
+            r.e.fillSnapshot (s);
+            expectEquals (s.recentCcCount, 3);
+            expect (s.recentCc[0] == 11 && s.recentCc[1] == 1 && s.recentCc[2] == 74);
+            for (int n : { 2, 3 })
+                r.at (0.06, juce::MidiMessage::controllerEvent (1, n, 64));
+            r.run (0.05);
+            r.e.fillSnapshot (s);
+            expectEquals (s.recentCcCount, 4);   // full: the oldest, 74, dropped
+            expect (s.recentCc[0] == 3 && s.recentCc[1] == 2 && s.recentCc[2] == 11 && s.recentCc[3] == 1);
+        }
+
         beginTest ("CH: OMNI poly keeps each voice's channel; a set channel plays only its own");
         {
             Rig r;

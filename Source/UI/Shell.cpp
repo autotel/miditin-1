@@ -86,6 +86,22 @@ Shell::Shell (Host& h) : host (h), patch (h.patch()), seenVersion (h.patchVersio
         [this] (float v) { edit ([v] (Patch& p) { p.ccNumber = (int) v; }); },
         [] (float v) { return juce::String ((int) v); });
     add (*ccNumber);
+    add (learnBtn);
+    learnBtn.setComponentID ("learn");   // the snapshot tool presses it
+    learnBtn.onClick = [this] { learning = ! learning; layoutControls(); refreshCcPicks(); };
+    for (int i = 0; i < 4; ++i)
+    {
+        add (*ccPicks.add (new BoxButton ("")));
+        ccPicks[i]->onClick = [this, i] {
+            if (i >= snap->recentCcCount)
+                return;
+            const int n = snap->recentCc[(size_t) i];
+            edit ([n] (Patch& p) { p.ccNumber = n; });
+            learning = false;
+            layoutControls();
+            refreshCcPicks();
+        };
+    }
     row (enAmount, P::enFilterAmt);
     row (enPhase, P::enPhase);
 
@@ -261,6 +277,23 @@ void Shell::syncControls()
 
 void Shell::resized() { layoutControls(); }
 
+void Shell::refreshCcPicks()
+{
+    const bool on = learning && patch.enSource == EnergySource::cc;
+    const int n = snap->recentCcCount;
+    learnBtn.setText (learning && n == 0 ? "LISTEN" : "LEARN");   // lit while learning
+    learnBtn.setOn (learning);
+    for (int i = 0; i < ccPicks.size(); ++i)
+    {
+        ccPicks[i]->setVisible (on && i < n);
+        if (i < n)
+        {
+            ccPicks[i]->setText ("CC " + juce::String (snap->recentCc[(size_t) i]));
+            ccPicks[i]->setOn (snap->recentCc[(size_t) i] == patch.ccNumber);
+        }
+    }
+}
+
 void Shell::layoutControls()
 {
     const auto& p = patch;
@@ -313,8 +346,23 @@ void Shell::layoutControls()
         show (*enPhase, osc && p.enRetrig);
         if (osc && p.enRetrig)
             enPhase->setBounds (st.next (rowH));
+        show (learnBtn, cc);
         if (cc)
-            ccNumber->setBounds (st.next (rowH));
+        {
+            auto r = st.next (rowH);
+            learnBtn.setBounds (r.removeFromRight (56).withSizeKeepingCentre (56, buttonH));
+            ccNumber->setBounds (r.withTrimmedRight (gap));
+        }
+        if (cc && learning)
+        {
+            auto r = st.next (buttonH);
+            const int w = (r.getWidth() - 3 * gap) / 4;
+            for (auto* b : ccPicks)
+            {
+                b->setBounds (r.removeFromLeft (w));
+                r.removeFromLeft (gap);
+            }
+        }
         labelled (st, "FILTER", enFilter, Segmented::heightFor (1, 3));
         const bool filtered = p.enFilter != EnergyFilter::off;
         show (enEdge, filtered); show (*enAmount, filtered);
@@ -493,6 +541,7 @@ void Shell::advanceFrame (double seconds)
     for (auto* c : getChildren())
         if (auto* r = dynamic_cast<RangeRow*> (c))
             r->refresh();
+    refreshCcPicks();
 
     // The plot and the cables move with engine time: stopped audio holds them still.
     if (shownT <= before)

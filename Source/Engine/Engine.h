@@ -88,6 +88,8 @@ struct UiSnapshot
     std::array<LogItem, 5> log {};          // newest first
     int    logCount = 0;
     float  cc = 0.5f;
+    std::array<int, 4> recentCc {};        // CC LEARN: the last distinct CC numbers, newest first
+    int    recentCcCount = 0;
 };
 
 /** The display between two snapshots: `b` with its continuous state (time, energy, wheel, balls,
@@ -191,6 +193,8 @@ private:
     double lastClockT = -9;                // engine time of the last 0xF8
     int   numHeld = 0;
     float cc = 0.5f;
+    std::array<int, 4> recentCc {};
+    int   recentCcCount = 0;
     // ponytail: fixed 30 ms RMS window; a knob if it proves too jumpy or too slow.
     static constexpr double rmsTau = 0.030;
     double meanSquare = 0, msCoef = 0;

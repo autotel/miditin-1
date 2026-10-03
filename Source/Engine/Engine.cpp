@@ -205,8 +205,22 @@ void Engine::handle (const juce::MidiMessage& m, juce::MidiBuffer& out, int pos)
         inputNoteOff (m.getNoteNumber(), ch, out, pos);
     else if (m.isAllNotesOff() || m.isAllSoundOff())
         releaseHeld (out, pos);
-    else if (m.isController() && m.getControllerNumber() == patch.ccNumber)
-        cc = (float) m.getControllerValue() / 127.0f;
+    else if (m.isController())
+    {
+        const int num = m.getControllerNumber();
+        if (num == patch.ccNumber)
+            cc = (float) m.getControllerValue() / 127.0f;
+        if (num < 120)   // 120..127 are channel-mode messages, never a CC source
+        {
+            // Move to front: a busy CC keeps its one place, so it cannot crowd the others out.
+            int i = 0;
+            while (i < recentCcCount && recentCc[(size_t) i] != num) ++i;
+            if (i == recentCcCount && recentCcCount < (int) recentCc.size()) ++recentCcCount;
+            for (int k = std::min (i, (int) recentCc.size() - 1); k > 0; --k)
+                recentCc[(size_t) k] = recentCc[(size_t) k - 1];
+            recentCc[0] = num;
+        }
+    }
     else if (m.isMidiStart())
         clockCount = 0;
     else if (m.isMidiClock())
@@ -576,6 +590,8 @@ void Engine::fillSnapshot (UiSnapshot& s) const
     s.clock = clock;
     s.poly = poly();
     s.cc = cc;
+    s.recentCc = recentCc;
+    s.recentCcCount = recentCcCount;
 
     auto view = [] (const Chain& c) {
         UiSnapshot::View v;

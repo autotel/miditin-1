@@ -72,6 +72,10 @@ private:
     Segmented enShape { { "SIN", "TRI", "SAW", "SQR", "S&H" }, 5 };
     BoxButton syncBtn { "SYNC" }, retrigBtn { "RETRIG" };
     std::unique_ptr<RangeRow> ccNumber, enAmount, enPhase;
+    BoxButton learnBtn { "LEARN" };
+    juce::OwnedArray<BoxButton> ccPicks;   // CC LEARN: the snapshot's `recentCc`, to pick from
+    bool learning = false;
+    void refreshCcPicks();
     Segmented enFilter { { "OFF", "LPF", "HPF" }, 3 };
     Segmented enEdge { { "BOTH", "+ ONLY", "- ONLY" }, 3, fonts::buttonSmall };
     // pulse
