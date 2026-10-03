@@ -168,6 +168,9 @@ std::vector<Key> keys (int lo, int hi, float width)
     return out;
 }
 
+/** The shaker box's side: the canvas height, shrunk so the tilted box still fits it. */
+static float shakerSide() { return (CH - 4) / (std::cos (Shaker::tilt) + std::sin (Shaker::tilt)); }
+
 Anchors anchorsFor (const Frame& f)
 {
     Anchors a;
@@ -177,7 +180,8 @@ Anchors anchorsFor (const Frame& f)
     switch (f.patch->pulse)
     {
         case PulseKind::wheel:   a.pTop = { CW / 2 - 12, CH / 2 - 2 }; a.pOut = { CW / 2 - 12 + CH / 2 - 12 + 13, CH / 2 - 2 }; break;
-        case PulseKind::shaker:  a.pTop = { CW / 2, 2 + (CH - 4) / 2 }; a.pOut = { (CW + CH - 4) / 2, 2 + (CH - 4) / 2 }; break;
+        case PulseKind::shaker:  a.pTop = { CW / 2, CH / 2 };   // the right wall's middle, tilted with the box
+                                 a.pOut = a.pTop + juce::Point<float> (std::cos (Shaker::tilt), std::sin (Shaker::tilt)) * (shakerSide() / 2); break;
         case PulseKind::digital: a.pTop = { (30 + CW - 4) / 2, 14 + (CH - 14) / 5 * 2.5f }; a.pOut = { CW, 14 + (CH - 14) / 5 * 2.5f }; break;
         // No energy cable: energy drives nothing here. The wire leaves the circle's edge.
         case PulseKind::midiIn:  a.pOut = { CW / 2 + 26, CH / 2 + 4 }; break;
@@ -371,7 +375,10 @@ void drawShaker (juce::Graphics& g, const Frame& f)
     const auto& s = *f.s;
     // The box drawn where the energy moved it, scaled down to a few px so it stays in the canvas.
     const auto off = [] (float d, float gain) { return juce::jlimit (-6.0f, 6.0f, d * gain); };
-    const float S = CH - 4, bx = (CW - S) / 2 + off (s.views[0].boxX, 40), by = 2 + off (s.views[0].boxY, 16), R = Shaker::radius;
+    const float S = shakerSide(), bx = (CW - S) / 2 + off (s.views[0].boxX, 40), by = CH / 2 - S / 2 + off (s.views[0].boxY, 16), R = Shaker::radius;
+    // Everything below is in the box's frame: turn the canvas by its tilt about its centre.
+    juce::Graphics::ScopedSaveState tilted (g);
+    g.addTransform (juce::AffineTransform::rotation (Shaker::tilt, bx + S / 2, by + S / 2));
     g.setColour (theme::ink);
     g.drawRect (bx, by, S, S, 1.5f);
 

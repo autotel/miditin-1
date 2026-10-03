@@ -163,6 +163,11 @@ struct Shaker
 
         const float damp = (float) std::exp (-0.7 * dt);
         const float R = radius;
+        // The box sits tilted by `tilt`: gravity and its push, world-vertical, reach the balls
+        // turned into its frame, so they cannot settle into one vertical bounce together.
+        const float ax = -pushX, ay = -pushY + gravity * (float) dt;
+        const float cs = std::cos (tilt), sn = std::sin (tilt);
+        const float kickX = cs * ax + sn * ay, kickY = -sn * ax + cs * ay;
 
         auto hit = [&] (Ball& b, char w, float pos, float sp)
         {
@@ -181,8 +186,8 @@ struct Shaker
         for (int i = 0; i < count; ++i)
         {
             auto& b = balls[(size_t) i];
-            b.vx -= pushX;
-            b.vy -= pushY - gravity * (float) dt;
+            b.vx += kickX;
+            b.vy += kickY;
             b.vx *= damp;
             b.vy *= damp;
             const float sp = std::hypot (b.vx, b.vy);
@@ -234,6 +239,7 @@ struct Shaker
 
     // ponytail: hand-tuned feel constants; knobs if one setting cannot serve every patch.
     static constexpr float  gravity = 2.6f, shakeAmp = 0.08f, followTravel = 0.5f, maxSpeed = 40;
+    static constexpr float  tilt = 0.1f;   // radians, clockwise on screen
     static constexpr double shakeHz = 4.0, followTau = 0.02, baseTau = 2.0;
 };
 
