@@ -24,6 +24,7 @@ struct EnergyMod
 struct Wheel
 {
     double a = 0, w = 0;   // angle, angular speed (rad/s)
+    double kickW = 0;      // KICK's impulse on top of the energy speed, decays in ~0.3 s
     long   slot = 0;
     float  flick = 0;      // pointer flick, 1 at a peg, decays
     double angleBase = 0;  // ANGLE: where energy 0 points, re-based on a switch so nothing jumps
@@ -31,7 +32,7 @@ struct Wheel
     int    lastSlices = 0;
     float  strength = 0;   // of this step's pulses
 
-    /** SPEED: `value` is rev/s, the spin force -- speed eases toward it with inertia. ANGLE:
+    /** SPEED: `value` is rev/s, the wheel's speed, no inertia. ANGLE:
         `value` is turns, and the wheel is sprung (critically damped) to that angle, so pegs pass
         only while the energy moves. A peg passing the pointer is a pulse, stronger the faster the
         wheel turns, either way. Returns how many pegs passed this step -- all of them pulse. */
@@ -46,7 +47,8 @@ struct Wheel
         }
         else
         {
-            w += (target - w) * std::min (1.0, 0.8 * dt);
+            kickW *= std::exp (-3.0 * dt);
+            w = target + kickW;   // no inertia: add an LPF to the energy for that
         }
         lastMode = mode;
         a += w * dt;
@@ -66,7 +68,7 @@ struct Wheel
         return pegs;
     }
 
-    void kick() noexcept { w += twoPi * 1.2; }
+    void kick() noexcept { kickW += twoPi * 1.2; w += twoPi * 1.2; }
 
     // ponytail: hand-tuned spring (settles in ~0.3 s); a knob if ANGLE wants more or less lag.
     static constexpr double springW = 12.0;

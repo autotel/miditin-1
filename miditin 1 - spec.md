@@ -69,7 +69,7 @@ Each pulse generator has its own core mechanism. Energy modulates that mechanism
 
 **Generators**
 - **Wheel** (wheel of fortune)
-  - Core: speed (rev/s). Energy = spin force (drives speed with inertia).
+  - Core: speed (rev/s). Energy = speed, no inertia (add an LPF to the energy for that).
   - Slices: 3–24. Each peg passing the pointer is a pulse; strength comes from spin speed.
   - Pointer sits at the right (3 o'clock), flicks downward with the pegs' motion. A spin button gives a manual kick.
 - **Shaker**

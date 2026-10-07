@@ -27,11 +27,10 @@ struct PulseTests final : juce::UnitTest
         expect (std::abs (n - 60) <= 1, juce::String (n));
         expectWithinAbsoluteError (strength, 0.3f + 0.5f / 1.4f, 0.01f);
 
-        beginTest ("wheel: speed eases in -- no pulse in the first instant from rest");
+        beginTest ("wheel: no inertia -- speed is the energy, at once");
         Wheel rest;
-        int early = 0;
-        for (int i = 0; i < 100; ++i) early += rest.step (2.0f, WheelMode::speed, 3, dt);
-        expectEquals (early, 0);
+        rest.step (2.0f, WheelMode::speed, 3, dt);
+        expectWithinAbsoluteError (rest.w, 2.0 * twoPi, 1e-9);
 
         beginTest ("wheel: every peg passed pulses, however many in one step; a SLICES edit none");
         {
