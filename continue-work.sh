@@ -12,7 +12,8 @@ set -euo pipefail
 # build tool this project needs lives in /usr/bin; claude itself is a static binary in ~/.local/bin.
 export PATH="/home/joaquin/.local/bin:/usr/local/bin:/usr/bin:/bin"
 
-PROJECT="/home/joaquin/dev/miditin 1"
+# Wherever this script lives: the checkout has been renamed before.
+PROJECT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE="/home/joaquin/.local/bin/claude"
 
 # Read-only reference checkouts CLAUDE.md points at. JUCE is needed to build at all; the others

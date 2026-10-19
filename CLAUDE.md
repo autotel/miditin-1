@@ -88,7 +88,7 @@ open changes nothing until the plugin is reloaded.** Crash in REAPER: `./debug-r
 `./continue-work.sh` runs this pipeline headlessly: `claude -p "continue the work"` in auto mode,
 one run at a time (flock), logging to `~/.local/state/miditin-continue/` with `latest.log`
 symlinked to the newest. It sets its own PATH, because `at` and systemd hand a job a near-empty
-environment. Schedule one with `echo '"/home/joaquin/dev/miditin 1/continue-work.sh"' | at 00:02`
+environment. Schedule one with `echo '"/home/joaquin/dev/miditin 1 plugin/continue-work.sh"' | at 00:02`
 (the path has a space); `atq` lists what is queued and `atrm <job>` cancels it.
 
 ## Product development input pipeline
