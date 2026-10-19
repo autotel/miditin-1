@@ -145,15 +145,8 @@ jobs:
           pattern: miditin-1-*
           path: artifacts
 
-      - name: Zip each bundle
-        run: |
-          cd artifacts
-          for d in miditin-1-*; do
-            ( cd "$d" && zip -rq "../${d}.zip" miditin-1 )
-          done
-
       # A version tag names its own release; a push to main gets build-<sha>, the sha taken from the
-      # bundles so the tag matches the zips and the window.
+      # bundles so the tag matches the zips and the window. Before zipping: the glob would also match the zip.
       - name: Release name
         id: tag
         run: |
@@ -163,6 +156,13 @@ jobs:
             sha=$(ls -d artifacts/miditin-1-Linux-* | sed 's/.*-//')
             echo "name=build-$sha" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Zip each bundle
+        run: |
+          cd artifacts
+          for d in miditin-1-*; do
+            ( cd "$d" && zip -rq "../${d}.zip" miditin-1 )
+          done
 
       - name: Create release
         uses: softprops/action-gh-release@v3
