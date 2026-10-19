@@ -6,6 +6,7 @@
 | `./build.sh sanitize` | the same under ASan/UBSan |
 | `./build.sh hostcheck` | loads the built **VST3** through JUCE's VST3 hosting, no window: MIDI in shapes MIDI out (silent with nothing held, the held chord arpeggiated, a CC passed through; the wrapper's `MIDI CC` params are skipped in the state compare), transport, stop releases, state reload (every parameter, then byte-exact), bypass releases |
 | `build/MiditinSnap_artefacts/RelWithDebInfo/MiditinSnap <dir>` | renders the editor to PNGs from a headless engine run (several scenes + the preset panel); compare with the v2 prototype |
+| `build/MiditinSnap_artefacts/RelWithDebInfo/MiditinSnap --manual docs/images` | renders the pictures of `docs/MANUAL.md`: cropped scenes with violet numbered callouts, in `manualShots()` (`Tools/RenderSnapshots.cpp`). Crops and callouts are hand-placed Shell coordinates, so a layout change moves them -- re-render and look at every picture |
 | `xvfb-run -a timeout 8 ./run-built.sh` | the Standalone starts and runs (exit 124 = still alive at the timeout) |
 
 Never open a window on the user's display (CLAUDE.md); everything above runs headless.
