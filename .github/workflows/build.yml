@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout plugin
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: plugin
 
@@ -30,7 +30,7 @@ jobs:
         run: plugin/print-manual.sh "$PWD/manual/miditin 1 manual.pdf"
 
       - name: Upload manual
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: manual
           path: manual
@@ -53,7 +53,7 @@ jobs:
       # CMakeLists.txt finds JUCE and the librarian as siblings (../JUCE, ../autotel-plugin-presets-
       # librarian), so all three are checked out side by side.
       - name: Checkout plugin
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: plugin
 
@@ -62,14 +62,14 @@ jobs:
         run: echo "short=$(git -C plugin rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Checkout JUCE 8.0.12
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: juce-framework/JUCE
           ref: 8.0.12
           path: JUCE
 
       - name: Checkout presets librarian
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: autotel/autotel-plugin-presets-librarian
           path: autotel-plugin-presets-librarian
@@ -105,7 +105,7 @@ jobs:
           "plugin/build/Miditin_artefacts/Release/VST3/miditin 1.vst3"
 
       - name: Download manual
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: manual
           path: dist/miditin-1
@@ -125,7 +125,7 @@ jobs:
           cp plugin/Resources/Fonts/OFL-IBMPlex.txt dist/miditin-1/
 
       - name: Upload release bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: miditin-1-${{ matrix.name }}-${{ steps.sha.outputs.short }}
           path: dist
@@ -139,7 +139,7 @@ jobs:
       contents: write
     steps:
       - name: Download bundles
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: miditin-1-*
           path: artifacts
@@ -152,7 +152,7 @@ jobs:
           done
 
       - name: Create release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: artifacts/*.zip
           generate_release_notes: true
