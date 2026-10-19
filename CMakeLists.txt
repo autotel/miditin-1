@@ -12,6 +12,15 @@ set(ATL_PRESETS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../autotel-plugin-presets-libra
     CACHE PATH "Where the shared Autotel presets librarian is checked out")
 add_subdirectory(${ATL_PRESETS_DIR} atl_presets_build)
 
+# JUCE compiles its modules into every target that links them, so the librarian's libraries need the
+# same module config as the plugin (MDT_DEFINITIONS, below): without it they build juce_core with
+# curl on, which wants libcurl headers nothing here uses (CI runners lack them) and which would
+# differ from the plugin's own copy.
+set(MDT_DEFINITIONS
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0)
+target_compile_definitions(atl_presets_files PUBLIC ${MDT_DEFINITIONS})
+
 # IBM Plex Mono and IBM Plex Sans Condensed: SIL OFL 1.1 with Reserved Font Name "Plex". Embedded
 # byte-for-byte as IBM ships them -- subsetting or otherwise modifying a file would make it a
 # derivative that may not carry the name. Resources/Fonts/OFL-IBMPlex.txt ships with any binary.
@@ -60,10 +69,6 @@ set(MDT_UI_SOURCES
     Source/UI/Controls.cpp
     Source/UI/Views.cpp
     Source/UI/Shell.cpp)
-
-set(MDT_DEFINITIONS
-    JUCE_WEB_BROWSER=0
-    JUCE_USE_CURL=0)
 
 target_sources(Miditin PRIVATE
     ${MDT_CORE_SOURCES}

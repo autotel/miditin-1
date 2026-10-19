@@ -1,7 +1,7 @@
 name: Build
 
-# The release build: VST3 + Standalone + the printed manual, zipped. Local builds (build.sh) do not
-# print the manual; ./print-manual.sh does that on demand.
+# The release build for Linux, macOS and Windows: VST3 + Standalone + the printed manual, zipped.
+# Local builds (build.sh) do not print the manual; ./print-manual.sh does that on demand.
 #
 # Versions are commit hashes (the window shows the build's sha), so every push to main builds and
 # its bundle is named by that sha. A tag also publishes a GitHub Release with the zip attached.
@@ -12,11 +12,43 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Linux
-    # Linux only: the platform the plugin is developed and checked on. macOS/Windows would be more
-    # matrix rows, as in ../Spectral hold plugin's workflow, once someone has run them.
+  # The printed manual is the same on every platform, so it is made once (pandoc + the runner's
+  # Chrome, see print-manual.sh) and each platform's job stages it into its bundle.
+  manual:
+    name: Manual
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout plugin
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Install pandoc
+        run: sudo apt-get update && sudo apt-get install -y pandoc
+
+      - name: Print manual
+        run: plugin/print-manual.sh "$PWD/manual/miditin 1 manual.pdf"
+
+      - name: Upload manual
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual
+          path: manual
+
+  build:
+    name: ${{ matrix.name }}
+    needs: manual
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, name: Linux }
+          - { os: macos-latest,  name: macOS }
+          - { os: windows-2022,  name: Windows }
+    defaults:
+      run:
+        shell: bash
     steps:
       # CMakeLists.txt finds JUCE and the librarian as siblings (../JUCE, ../autotel-plugin-presets-
       # librarian), so all three are checked out side by side.
@@ -42,45 +74,60 @@ jobs:
           repository: autotel/autotel-plugin-presets-librarian
           path: autotel-plugin-presets-librarian
 
-      - name: Install deps
+      - name: Install Linux deps
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             pkg-config libasound2-dev libx11-dev libxext-dev libxinerama-dev \
-            libxrandr-dev libxcursor-dev libfreetype-dev libfontconfig1-dev libgl1-mesa-dev \
-            pandoc
+            libxrandr-dev libxcursor-dev libfreetype-dev libfontconfig1-dev libgl1-mesa-dev
 
+      # macOS ships universal (Apple silicon + Intel) so one bundle loads in either kind of host.
       - name: Configure
-        run: cmake -S plugin -B plugin/build -DCMAKE_BUILD_TYPE=Release
+        run: >
+          cmake -S plugin -B plugin/build -DCMAKE_BUILD_TYPE=Release
+          ${{ runner.os == 'macOS' && '-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"' || '' }}
 
       - name: Build
         run: >
-          cmake --build plugin/build --parallel
+          cmake --build plugin/build --config Release --parallel
           --target Miditin_VST3 Miditin_Standalone MiditinTests MiditinHostCheck
 
       - name: Test suite
         run: plugin/build/MiditinTests_artefacts/Release/MiditinTests
 
+      # Not run on macOS/Windows as a gate yet: nobody has watched JUCE's VST3 hosting load the
+      # plugin headlessly there. Its result shows in the log; make it blocking once it is green.
       - name: VST3 host check
+        continue-on-error: ${{ runner.os != 'Linux' }}
         run: >
           plugin/build/MiditinHostCheck_artefacts/Release/MiditinHostCheck
           "plugin/build/Miditin_artefacts/Release/VST3/miditin 1.vst3"
+
+      - name: Download manual
+        uses: actions/download-artifact@v4
+        with:
+          name: manual
+          path: dist/miditin-1
 
       # Stage under a named folder and upload its parent: pointing upload-artifact at the .vst3
       # bundle itself zips its contents, a bare Contents/ with no name on it.
       # The OFL text goes along because the binaries embed the IBM Plex fonts (CLAUDE.md).
       - name: Stage release bundle
         run: |
-          mkdir -p dist/miditin-1
-          cp -R "plugin/build/Miditin_artefacts/Release/VST3/miditin 1.vst3" dist/miditin-1/
-          cp "plugin/build/Miditin_artefacts/Release/Standalone/miditin 1" dist/miditin-1/
+          art=plugin/build/Miditin_artefacts/Release
+          cp -R "$art/VST3/miditin 1.vst3" dist/miditin-1/
+          case "$RUNNER_OS" in
+            Linux)   cp "$art/Standalone/miditin 1" dist/miditin-1/ ;;
+            macOS)   cp -R "$art/Standalone/miditin 1.app" dist/miditin-1/ ;;
+            Windows) cp "$art/Standalone/miditin 1.exe" dist/miditin-1/ ;;
+          esac
           cp plugin/Resources/Fonts/OFL-IBMPlex.txt dist/miditin-1/
-          plugin/print-manual.sh "$PWD/dist/miditin-1/miditin 1 manual.pdf"
 
       - name: Upload release bundle
         uses: actions/upload-artifact@v4
         with:
-          name: miditin-1-Linux-${{ steps.sha.outputs.short }}
+          name: miditin-1-${{ matrix.name }}-${{ steps.sha.outputs.short }}
           path: dist
 
   release:
@@ -94,6 +141,7 @@ jobs:
       - name: Download bundles
         uses: actions/download-artifact@v4
         with:
+          pattern: miditin-1-*
           path: artifacts
 
       - name: Zip each bundle

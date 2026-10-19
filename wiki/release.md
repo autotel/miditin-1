@@ -3,21 +3,27 @@
 `.github/workflows/build.yml` builds the release on every push to `main`, on a version tag
 (`v0.1.0`, or a bare `0.1.0`) and on a manual `workflow_dispatch`. PRs do not trigger it.
 Versioning is by commit: the window shows the build's sha (hover the title), the manual's edition
-line prints it, and each run's bundle is the artifact `miditin-1-Linux-<sha>` (a zip, downloadable
+line prints it, and each run's bundles are the artifacts `miditin-1-<Linux|macOS|Windows>-<sha>` (zips, downloadable
 from the run's page while GitHub keeps it, 90 days by default). Only a tag also publishes a GitHub
 Release. `project(Miditin VERSION ...)` stays as the plugin's nominal version.
 
-- **Linux only.** That is the platform the plugin is checked on. `../Spectral hold plugin`'s
-  workflow shows the macOS/Windows matrix rows if they are ever wanted.
+- **Three platforms.** Linux (ubuntu-latest), macOS (macos-latest, universal arm64 + x86_64) and
+  Windows (windows-2022, MSVC). Linux is the only one the plugin is developed and checked on:
+  the macOS and Windows rows were added blind, so expect first-run compile fixes there. Their VST3
+  host check is `continue-on-error` until someone has seen it pass; drop that then.
+- **Module config.** JUCE compiles its modules into every target that links them, so the
+  librarian's libraries get `JUCE_USE_CURL=0` / `JUCE_WEB_BROWSER=0` too (CMakeLists.txt,
+  `MDT_DEFINITIONS`). Without it juce_core wants `curl/curl.h`, which CI runners do not have.
+- **Manual.** Printed once by the `manual` job (Ubuntu), then each platform's job stages that PDF.
 - **Siblings.** CMake finds `../JUCE` and `../autotel-plugin-presets-librarian`, so CI checks out
   all three side by side. JUCE is pinned to `8.0.12` (the local checkout is 8.0.12 plus a few
   commits); re-pin both together. The librarian is public and checked out at its default
   branch's head, unpinned.
-- **Checks.** Release config, then the test suite and the VST3 host check. HostCheck defaults
+- **Checks.** Release config (`--config Release` for the multi-config MSVC/Xcode builds), then the test suite and the VST3 host check. HostCheck defaults
   to the RelWithDebInfo path, so CI passes it the Release `.vst3`.
-- **Bundle.** `dist/miditin-1/` holds `miditin 1.vst3`, the `miditin 1` Standalone,
+- **Bundle.** `dist/miditin-1/` holds `miditin 1.vst3`, the `miditin 1` Standalone (`miditin 1`, `miditin 1.app` or `miditin 1.exe`),
   `miditin 1 manual.pdf` and `OFL-IBMPlex.txt`. The binaries embed Plex, and the OFL must ship
-  with them. On a tag, the `release` job zips the artifact to `miditin-1-Linux-<sha>.zip` and
+  with them. On a tag, the `release` job zips each artifact to `miditin-1-<OS>-<sha>.zip` and
   attaches that to a GitHub Release.
 
 ## The printed manual
