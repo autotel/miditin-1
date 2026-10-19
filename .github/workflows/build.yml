@@ -36,14 +36,11 @@ jobs:
           ref: 8.0.12
           path: JUCE
 
-      # The librarian repo is private: the default token only reads this repo, so a fine-grained
-      # token with read access to it goes in the LIBRARIAN_TOKEN secret.
       - name: Checkout presets librarian
         uses: actions/checkout@v4
         with:
           repository: autotel/autotel-plugin-presets-librarian
           path: autotel-plugin-presets-librarian
-          token: ${{ secrets.LIBRARIAN_TOKEN || github.token }}
 
       - name: Install deps
         run: |

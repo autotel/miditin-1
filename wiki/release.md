@@ -11,9 +11,8 @@ Release. `project(Miditin VERSION ...)` stays as the plugin's nominal version.
   workflow shows the macOS/Windows matrix rows if they are ever wanted.
 - **Siblings.** CMake finds `../JUCE` and `../autotel-plugin-presets-librarian`, so CI checks out
   all three side by side. JUCE is pinned to `8.0.12` (the local checkout is 8.0.12 plus a few
-  commits); re-pin both together. The librarian repo is private, so its checkout needs the
-  `LIBRARIAN_TOKEN` secret, a fine-grained token with read access to it. Without the secret it
-  falls back to the job's own token, which cannot read another private repo.
+  commits); re-pin both together. The librarian is public and checked out at its default
+  branch's head, unpinned.
 - **Checks.** Release config, then the test suite and the VST3 host check. HostCheck defaults
   to the RelWithDebInfo path, so CI passes it the Release `.vst3`.
 - **Bundle.** `dist/miditin-1/` holds `miditin 1.vst3`, the `miditin 1` Standalone,
