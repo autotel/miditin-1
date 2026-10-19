@@ -84,6 +84,7 @@ target_sources(MiditinTests PRIVATE
     Tests/EnergyTests.cpp
     Tests/PulseTests.cpp
     Tests/EngineTests.cpp
+    Tests/FocusGuardTests.cpp
     # The librarian's own tests run here: one runner per build tree.
     ${ATL_PRESETS_TEST_SOURCES})
 target_compile_definitions(MiditinTests PRIVATE ${MDT_DEFINITIONS})

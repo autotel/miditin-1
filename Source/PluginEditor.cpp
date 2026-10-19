@@ -62,9 +62,27 @@ MiditinEditor::MiditinEditor (MiditinProcessor& p)
     shell.setPresetPanel (&presetPanel);
     shell.setPresetName (proc.openPresetName);
 
-    // A text field in the librarian must keep the keyboard: without this the peer hands focus to
-    // the first child that wants it, and a button eats the keystrokes.
+    // Keyboard focus, both halves. Without them a text field -- TONES, the librarian's name or
+    // search box -- takes the click, shows a caret, and ignores every keystroke:
+    //
+    // 1. This editor has to absorb focus itself. juce::ComponentPeer::handleFocusGain() falls back
+    //    to grabKeyboardFocus() on the peer's component whenever nothing here was focused, and a
+    //    container that does not want focus hands it on to "the first child that does" -- a button,
+    //    which then eats every printable key. Wanting it stops that walk at the top.
     setWantsKeyboardFocus (true);
+
+    // 2. ...and a click has to beat the peer's focus *restore*. handleFocusLoss() remembers what
+    //    was focused, handleFocusGain() puts focus straight back there, and a click into a field on
+    //    a window the host still holds focus on does both in that order: the click focuses the
+    //    field, then the X11 FocusIn that same click provoked drags focus back to wherever it was
+    //    last time. The two are not ordered, which is why it is intermittent and nearly always the
+    //    first click after touching another window.
+    //
+    //    Don't race the restore -- react to it. mouseDown records what the click aimed the keyboard
+    //    at, and any focus change within kClickFocusGraceMs of it re-asserts that target. The grace
+    //    window leaves Tab and every later deliberate focus move alone.
+    addMouseListener (this, true);   // nested children too: one guard covers every field
+    juce::Desktop::getInstance().addFocusChangeListener (this);
     addAndMakeVisible (shell);
 
     // The design aspect, 75 %..250 %. After the shell, so the corner resizer sits on top of it.
@@ -78,7 +96,76 @@ MiditinEditor::MiditinEditor (MiditinProcessor& p)
 }
 
 // Saved on close, not per resize step: the settings file writes on every setValue.
-MiditinEditor::~MiditinEditor() { settings.setValue ("editor.width", getWidth()); }
+MiditinEditor::~MiditinEditor()
+{
+    juce::Desktop::getInstance().removeFocusChangeListener (this);
+    settings.setValue ("editor.width", getWidth());
+}
+
+// How long after a click this editor still treats a focus change as "something stole the click's
+// focus". Long enough for the FocusIn that arrives a frame or two after the ButtonPress that
+// provoked it; far shorter than any deliberate move.
+static constexpr double kClickFocusGraceMs = 500.0;
+
+void MiditinEditor::mouseDown (const juce::MouseEvent& e)
+{
+    // The component JUCE would have focused for this click: the one clicked, or the first parent
+    // that wants focus -- the same walk Component::grabKeyboardFocusInternal() makes.
+    juce::Component* target = e.eventComponent;
+    while (target != nullptr && ! (target->getWantsKeyboardFocus() && target->isEnabled()))
+        target = target->getParentComponent();
+
+    // A click on something that takes no focus or on the editor itself has nothing to defend, and
+    // clearing the target stops a stale one being restored under a later change.
+    if (target == nullptr || target == this)
+    {
+        clickFocusTarget = nullptr;
+        return;
+    }
+
+    clickFocusTarget = target;
+    clickFocusTimeMs = juce::Time::getMillisecondCounterHiRes();
+
+    juce::MessageManager::callAsync ([safeThis = juce::Component::SafePointer<MiditinEditor> (this)]
+    {
+        if (auto* self = safeThis.getComponent())
+            self->reassertClickFocus (true);
+    });
+}
+
+void MiditinEditor::globalFocusChanged (juce::Component*)
+{
+    // Fires for every focus change in the process, including the ones this method causes -- the
+    // re-assert is a no-op once focus is already on the target, so there is no loop.
+    if (juce::Time::getMillisecondCounterHiRes() - clickFocusTimeMs > kClickFocusGraceMs)
+    {
+        clickFocusTarget = nullptr;
+        return;
+    }
+
+    reassertClickFocus (false);
+}
+
+void MiditinEditor::reassertClickFocus (bool allowUnfocused)
+{
+    auto* t = clickFocusTarget.getComponent();
+    if (t == nullptr || ! t->isShowing() || ! t->getWantsKeyboardFocus() || ! t->isEnabled())
+        return;
+    if (juce::Component::getCurrentlyFocusedComponent() == t)
+        return;
+    // A modal file chooser -- the librarian's folder picker -- is entitled to the keyboard.
+    if (juce::ModalComponentManager::getInstance()->getNumModalComponents() > 0)
+        return;
+
+    // Only take focus back from within this editor, and never when there is no focus at all: both
+    // of those are somebody else's window. focusIsWithin() rather than isParentOf(), because the
+    // editor itself is exactly where the peer's fallback grabKeyboardFocus() lands.
+    auto* focused = juce::Component::getCurrentlyFocusedComponent();
+    if (focused == nullptr ? ! allowUnfocused : ! mdt::focusIsWithin (*this, focused))
+        return;
+
+    t->grabKeyboardFocus();
+}
 
 void MiditinEditor::resized()
 {

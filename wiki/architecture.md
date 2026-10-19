@@ -97,7 +97,11 @@ publishes one snapshot per block, so the display runs a block behind on its own 
 of the wheel angle: block 256 0.08 → 0.03, 1024 0.60 → 0.09 (39 stalled frames in 3 s → 0),
 2048 2.0 → 0.07. Painting the animated bands costs 3.5 ms a frame at 1x, 6.6 ms at 2x.
 The shell is laid out once at 900 x 570; the editor resizes at the design aspect and scales the shell
-with one transform. The processor keeps the width (and saves it), since the editor dies on close.
+with one transform. The width is a machine-wide setting (`editor.width`), written when the editor closes.
+Text fields (TONES, the librarian's) keep the keyboard by two defences in `PluginEditor.cpp`: the
+editor wants focus itself, and a click's focus target is re-asserted for 500 ms against the X11
+FocusIn restore -- the mepSynth fix, `focusIsWithin()` counting the editor itself. The Standalone
+cannot reproduce the bug either way; only a host can.
 
 ## Output velocity
 

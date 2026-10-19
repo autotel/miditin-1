@@ -1,14 +1,18 @@
 #pragma once
 #include <PresetPanel.h>
 #include "PluginProcessor.h"
+#include "UI/FocusGuard.h"
 #include "UI/Shell.h"
 
-class MiditinEditor final : public juce::AudioProcessorEditor, private mdt::Host, private atl::PresetHost
+class MiditinEditor final : public juce::AudioProcessorEditor, private mdt::Host, private atl::PresetHost,
+                            private juce::FocusChangeListener
 {
 public:
     explicit MiditinEditor (MiditinProcessor&);
     ~MiditinEditor() override;
     void resized() override;
+    /** Keyboard-focus defence: records what a click aimed the keyboard at. See the constructor. */
+    void mouseDown (const juce::MouseEvent&) override;
 
     static const atl::PresetFormat& presetFormat();
 
@@ -18,6 +22,17 @@ private:
     std::vector<juce::MemoryBlock> builtInData;   // what the built-in entries point into
     mdt::Shell shell;
     atl::PresetPanel presetPanel;
+
+    /** Puts the keyboard back on what the click aimed it at, if something took it away inside this
+        editor shortly afterwards. */
+    void globalFocusChanged (juce::Component* focused) override;
+    /** `allowUnfocused`: the deferred post-click call takes focus even when nothing holds it (the
+        click's own grab can be lost before the message queue drains); the focus-change call does
+        not, because "nothing is focused" is also what a genuine window deactivation looks like. */
+    void reassertClickFocus (bool allowUnfocused);
+
+    juce::Component::SafePointer<juce::Component> clickFocusTarget;
+    double clickFocusTimeMs = 0.0;
 
     // -- mdt::Host --------------------------------------------------------------------------------
     const mdt::Patch& patch() const override { return proc.getPatch(); }
