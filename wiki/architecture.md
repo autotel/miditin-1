@@ -102,6 +102,8 @@ Text fields (TONES, the librarian's) keep the keyboard by two defences in `Plugi
 editor wants focus itself, and a click's focus target is re-asserted for 500 ms against the X11
 FocusIn restore -- the mepSynth fix, `focusIsWithin()` counting the editor itself. The Standalone
 cannot reproduce the bug either way; only a host can.
+Which build is loaded: hover the "miditin 1" title and the header caption reads `BUILD <sha> · <date>`
+(`-dirty` = uncommitted changes); click it to copy. Stamped by `cmake/BuildInfo.cmake` on every build.
 
 ## Output velocity
 

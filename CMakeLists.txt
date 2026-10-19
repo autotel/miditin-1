@@ -37,8 +37,18 @@ juce_add_plugin(Miditin
     # Not installed to ~/.vst3 -- the DAW is pointed at this build output, so no stale copy loads.
     COPY_PLUGIN_AFTER_BUILD FALSE)
 
+# The commit and build time the window shows (Source/Model/BuildInfo.h). The script runs on every
+# build and rewrites the source only when it changes; every target compiling it depends on this.
+set(MDT_BUILD_INFO "${CMAKE_CURRENT_BINARY_DIR}/generated/BuildInfo.cpp")
+add_custom_target(MiditinBuildInfo
+    COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_CURRENT_SOURCE_DIR} -DOUT=${MDT_BUILD_INFO}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/BuildInfo.cmake
+    BYPRODUCTS ${MDT_BUILD_INFO}
+    VERBATIM)
+
 # Shared between the plugin and the headless tests. Anything that is not UI belongs here.
 set(MDT_CORE_SOURCES
+    ${MDT_BUILD_INFO}
     Source/Model/ParamRegistry.cpp
     Source/Model/Patch.cpp
     Source/Model/Document.cpp
@@ -61,6 +71,7 @@ target_sources(Miditin PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp)
 
+add_dependencies(Miditin MiditinBuildInfo)
 target_compile_definitions(Miditin PUBLIC ${MDT_DEFINITIONS} JUCE_VST3_CAN_REPLACE_VST2=0)
 target_include_directories(Miditin PRIVATE Source)
 target_link_libraries(Miditin
@@ -87,6 +98,7 @@ target_sources(MiditinTests PRIVATE
     Tests/FocusGuardTests.cpp
     # The librarian's own tests run here: one runner per build tree.
     ${ATL_PRESETS_TEST_SOURCES})
+add_dependencies(MiditinTests MiditinBuildInfo)
 target_compile_definitions(MiditinTests PRIVATE ${MDT_DEFINITIONS})
 target_include_directories(MiditinTests PRIVATE Source Tests)
 target_link_libraries(MiditinTests
@@ -106,6 +118,7 @@ target_sources(MiditinSnap PRIVATE
     ${MDT_CORE_SOURCES}
     ${MDT_UI_SOURCES}
     Tools/RenderSnapshots.cpp)
+add_dependencies(MiditinSnap MiditinBuildInfo)
 target_compile_definitions(MiditinSnap PRIVATE ${MDT_DEFINITIONS})
 target_include_directories(MiditinSnap PRIVATE Source)
 target_link_libraries(MiditinSnap

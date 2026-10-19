@@ -1,5 +1,6 @@
 #include "Shell.h"
 #include "Theme.h"
+#include "Model/BuildInfo.h"
 
 namespace mdt
 {
@@ -575,9 +576,10 @@ void Shell::paint (juce::Graphics& g)
     g.fillRect (0, headerH - 1, width, 1);
     fonts::text (g, "miditin 1", 16, 29, fonts::title, theme::ink);
     g.setColour (theme::muted);
-    const float titleW = juce::GlyphArrangement::getStringWidth (fonts::font (fonts::title), "miditin 1");
-    const auto caption = fonts::utf8 ("ENERGY \xe2\x86\x92 PULSE \xe2\x86\x92 GENERATE \xe2\x86\x92 TRANSFORM \xe2\x86\x92 MIDI");
-    fonts::drawTracked (g, caption, { 16 + titleW + 10, 0, 400, (float) headerH }, fonts::caption, juce::Justification::centredLeft);
+    const auto caption = titleHover
+        ? fonts::utf8 ("BUILD ") + buildSha() + fonts::utf8 (" \xc2\xb7 ") + buildDate()
+        : fonts::utf8 ("ENERGY \xe2\x86\x92 PULSE \xe2\x86\x92 GENERATE \xe2\x86\x92 TRANSFORM \xe2\x86\x92 MIDI");
+    fonts::drawTracked (g, caption, { titleArea().getRight() + 10, 0, 400, (float) headerH }, fonts::caption, juce::Justification::centredLeft);
 
     drawModuleTitles (g);
     drawBottomText (g);
@@ -729,8 +731,23 @@ int Shell::melodyHandle (juce::Point<float> l) const
     return -1;
 }
 
+juce::Rectangle<float> Shell::titleArea()
+{
+    static const float w = juce::GlyphArrangement::getStringWidth (fonts::font (fonts::title), "miditin 1");
+    return { 16, 0, w, (float) headerH };
+}
+
 void Shell::mouseMove (const juce::MouseEvent& e)
 {
+    if (const bool t = titleArea().contains (e.position); t != titleHover)
+    {
+        titleHover = t;
+        setMouseCursor (t ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
+        repaint (0, 0, width, headerH);
+    }
+    if (titleHover)
+        return;
+
     const auto r = canvas (0);
     const auto z = r.contains (e.position) ? energyZone (e.position - r.getPosition()) : juce::String();
     if (z != energyHover)
@@ -754,12 +771,20 @@ void Shell::mouseMove (const juce::MouseEvent& e)
 
 void Shell::mouseExit (const juce::MouseEvent&)
 {
+    if (titleHover) { titleHover = false; repaint (0, 0, width, headerH); }
     if (energyHover.isNotEmpty()) { energyHover = {}; repaint(); }
 }
 
 void Shell::mouseDown (const juce::MouseEvent& e)
 {
     drag = {};
+
+    // For bug reports: which build is this?
+    if (titleArea().contains (e.position))
+    {
+        juce::SystemClipboard::copyTextToClipboard (juce::String ("miditin 1 ") + buildSha() + " " + buildDate());
+        return;
+    }
 
     if (const auto r = canvas (0); r.contains (e.position))
     {

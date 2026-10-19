@@ -54,6 +54,8 @@ private:
     std::array<views::History, maxVoices> histories {};
     int numHistories = 0;
     juce::String energyHover;
+    bool titleHover = false;   // the caption shows the build while the title is hovered
+    static juce::Rectangle<float> titleArea();
 
     struct Drag
     {

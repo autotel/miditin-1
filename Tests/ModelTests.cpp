@@ -1,5 +1,6 @@
 #include <set>
 #include <thread>
+#include "Model/BuildInfo.h"
 #include "Model/ParamRegistry.h"
 #include "Model/Patch.h"
 #include "Model/TripleBuffer.h"
@@ -105,7 +106,22 @@ struct TripleBufferTests final : juce::UnitTest
     }
 };
 
+struct BuildInfoTests final : juce::UnitTest
+{
+    BuildInfoTests() : juce::UnitTest ("BuildInfo") {}
+
+    void runTest() override
+    {
+        beginTest ("a SHA and a date-time are stamped in");
+        const juce::String sha (buildSha()), date (buildDate());
+        expect (sha.isNotEmpty(), sha);
+        expect (date.length() == 16 && date[4] == '-' && date[7] == '-' && date[10] == ' ' && date[13] == ':'
+                    && date.substring (0, 4).getIntValue() >= 2026, date);
+    }
+};
+
 static ParamRegistryTests paramRegistryTests;
+static BuildInfoTests buildInfoTests;
 static PatchTests patchTests;
 static TripleBufferTests tripleBufferTests;
 
