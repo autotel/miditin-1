@@ -526,6 +526,15 @@ Presets are files ending in `.miditin` in the presets folder (by default
 | Shaker melody | A slow triangle LFO shakes four balls through the melody, in A minor. |
 | Digital triplets | A synced LFO moves a triplet grid; an up/down arpeggio in D dorian. |
 | MIDI in, held chord | POLY, each key you play is one step of `0 1 2 4`, in A minor pentatonic. |
+| Gestural arpeggio | Velocity spins the wheel through your held notes, with inertia: play harder to rush it. |
+| Water-like | A slow swell shakes the balls; your held notes spill out in drips and splashes. |
+| Strummer | The wheel follows velocity by its angle, so each note strums your chord. FILTER sets the speed. |
+| PolyChaos | POLY, every held note shakes its own melody, transposed to it: decorations around a chord. |
+| Maximal Minimal | POLY, each held note runs `0 1 2 4` in A minor pentatonic on the DAW's clock. Press play. |
+| Mechanistic Arpeggio | A conventional arpeggiator: the digital grid plays your notes as played; the mod wheel picks the subdivision. |
+
+Each carries tags: **harmonic passthrough** keeps the output on the notes you hold, **fixed scale**
+forces it into a scale, **poly** gives every held note its own chain.
 
 ---
 

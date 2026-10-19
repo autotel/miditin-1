@@ -47,11 +47,7 @@ MiditinEditor::MiditinEditor (MiditinProcessor& p)
     builtInData.reserve (mdt::factoryPresets().size());   // load-bearing: entries point into it
     for (const auto& f : mdt::factoryPresets())
     {
-        auto doc = mdt::makeDocument (f.patch, f.pv);
-        doc.setProperty (presetFormat().nameProperty, f.name, nullptr);
-        juce::MemoryOutputStream out;
-        doc.writeToStream (out);
-        builtInData.push_back (out.getMemoryBlock());
+        builtInData.push_back (mdt::factoryPresetData (f, presetFormat()));
         builtIns.push_back ({ f.name, f.category, builtInData.back().getData(), (int) builtInData.back().getSize() });
     }
     presetPanel.setColours (panelColours());

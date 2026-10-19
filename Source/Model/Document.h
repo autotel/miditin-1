@@ -1,5 +1,6 @@
 #pragma once
 #include <juce_data_structures/juce_data_structures.h>
+#include <PresetFile.h>
 #include "ParamRegistry.h"
 #include "Patch.h"
 
@@ -20,11 +21,16 @@ void readDocument (const juce::ValueTree&, Patch&, ParamValues&);
 
 struct FactoryPreset
 {
-    juce::String name, category;
+    juce::String name, category, author, description;
+    juce::StringArray tags;
     Patch patch;
     ParamValues pv;
 };
 
-/** Shipped inside the binary: one per pulse generator. */
+/** Shipped inside the binary; every pulse generator appears in at least one. */
 const std::vector<FactoryPreset>& factoryPresets();
+
+/** The bytes a .miditin file of this preset would hold, metadata included -- what the librarian's
+    built-in entries point into. */
+juce::MemoryBlock factoryPresetData (const FactoryPreset&, const atl::PresetFormat&);
 } // namespace mdt

@@ -155,13 +155,20 @@ struct DocumentTests final : juce::UnitTest
         readDocument (doc, p2, pv2);
         expectEquals (pv2.i (P::whSlices), 24);
 
-        beginTest ("factory presets: one per pulse generator, each a valid document");
+        beginTest ("factory presets: every pulse generator, each a valid, described document");
         std::set<PulseKind> kinds;
+        std::set<juce::String> names;
+        const atl::PresetFormat format { ".miditin", documentType };
         for (const auto& f : factoryPresets())
         {
             kinds.insert (f.patch.pulse);
+            expect (names.insert (f.name).second, f.name);
             readDocument (makeDocument (f.patch, f.pv), p2, pv2);
             expect (p2 == f.patch, f.name);
+
+            const auto data = factoryPresetData (f, format);
+            const auto meta = atl::PresetFile::scanMetadataOnlyFromData (data.getData(), (int) data.getSize(), f.name, format);
+            expect (meta.has_value() && meta->description.isNotEmpty() && meta->tags == f.tags && ! f.tags.isEmpty(), f.name);
         }
         expectEquals ((int) kinds.size(), 4);
     }

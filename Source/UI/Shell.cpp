@@ -199,6 +199,13 @@ void Shell::setPresetPanel (juce::Component* panel)
     addAndMakeVisible (presetsBtn);
     addChildComponent (*panel);
     panel->setBounds (0, headerH, width, height - headerH);
+    // The name box toggles the librarian over everything below the header.
+    presetsBtn.onClick = [this] {
+        const bool open = ! presetPanel->isVisible();
+        presetPanel->setVisible (open);
+        presetsBtn.setOn (open);
+        repaint();
+    };
     layoutControls();
 }
 
@@ -322,10 +329,9 @@ void Shell::layoutControls()
         auto place = [&] (juce::Component& c, int w) { c.setBounds (right - w, y, w, 25); right -= w + 10; };
         place (soundBtn, 84);
         place (voiceBtn, 52);
-        const bool out = p.voiceMode == VoiceMode::mono && p.inChannel == 0;
-        outChannel->setVisible (out);
-        if (out)
-            place (*outChannel, 24 + 6 + 40 + 6 + 18);
+        // OUT keeps its slot when hidden, so showing it never moves CH out from under the mouse.
+        outChannel->setVisible (p.voiceMode == VoiceMode::mono && p.inChannel == 0);
+        place (*outChannel, 24 + 6 + 40 + 6 + 18);
         place (*inChannel, 18 + 6 + 50 + 6 + 30);
         if (presetPanel != nullptr)
             place (presetsBtn, 120);

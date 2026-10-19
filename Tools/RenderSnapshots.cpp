@@ -135,9 +135,7 @@ void render (const juce::File& dir, const Shot& shot)
     data.reserve (factoryPresets().size());
     for (const auto& f : factoryPresets())
     {
-        juce::MemoryOutputStream out;
-        makeDocument (f.patch, f.pv).writeToStream (out);
-        data.push_back (out.getMemoryBlock());
+        data.push_back (factoryPresetData (f, format));
         builtIns.push_back ({ f.name, f.category, data.back().getData(), (int) data.back().getSize() });
     }
     atl::PresetPanelColours c;
