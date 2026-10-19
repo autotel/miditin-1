@@ -4,7 +4,8 @@ name: Build
 # Local builds (build.sh) do not print the manual; ./print-manual.sh does that on demand.
 #
 # Versions are commit hashes (the window shows the build's sha), so every push to main builds and
-# its bundle is named by that sha. A tag also publishes a GitHub Release with the zip attached.
+# its bundle is named by that sha. Every push to main also publishes a GitHub Release, tagged
+# build-<sha>; a version tag publishes one under that tag's name.
 on:
   push:
     branches: [ main ]
@@ -133,7 +134,7 @@ jobs:
   release:
     name: Publish GitHub release
     needs: build
-    if: startsWith(github.ref, 'refs/tags/')
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -151,8 +152,23 @@ jobs:
             ( cd "$d" && zip -rq "../${d}.zip" miditin-1 )
           done
 
+      # A version tag names its own release; a push to main gets build-<sha>, the sha taken from the
+      # bundles so the tag matches the zips and the window.
+      - name: Release name
+        id: tag
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "name=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+          else
+            sha=$(ls -d artifacts/miditin-1-Linux-* | sed 's/.*-//')
+            echo "name=build-$sha" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create release
         uses: softprops/action-gh-release@v3
         with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: miditin 1 ${{ steps.tag.outputs.name }}
+          target_commitish: ${{ github.sha }}
           files: artifacts/*.zip
           generate_release_notes: true

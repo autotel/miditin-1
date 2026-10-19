@@ -4,8 +4,9 @@
 (`v0.1.0`, or a bare `0.1.0`) and on a manual `workflow_dispatch`. PRs do not trigger it.
 Versioning is by commit: the window shows the build's sha (hover the title), the manual's edition
 line prints it, and each run's bundles are the artifacts `miditin-1-<Linux|macOS|Windows>-<sha>` (zips, downloadable
-from the run's page while GitHub keeps it, 90 days by default). Only a tag also publishes a GitHub
-Release. `project(Miditin VERSION ...)` stays as the plugin's nominal version.
+from the run's page while GitHub keeps it, 90 days by default). Every push to `main` also
+publishes a GitHub Release tagged `build-<sha>`, and a version tag publishes one under its own name;
+a `workflow_dispatch` on another branch builds without publishing. `project(Miditin VERSION ...)` stays as the plugin's nominal version.
 
 - **Three platforms.** Linux (ubuntu-latest), macOS (macos-latest, universal arm64 + x86_64) and
   Windows (windows-2022, MSVC). Linux is the only one the plugin is developed and checked on:
@@ -23,8 +24,8 @@ Release. `project(Miditin VERSION ...)` stays as the plugin's nominal version.
   to the RelWithDebInfo path, so CI passes it the Release `.vst3`.
 - **Bundle.** `dist/miditin-1/` holds `miditin 1.vst3`, the `miditin 1` Standalone (`miditin 1`, `miditin 1.app` or `miditin 1.exe`),
   `miditin 1 manual.pdf` and `OFL-IBMPlex.txt`. The binaries embed Plex, and the OFL must ship
-  with them. On a tag, the `release` job zips each artifact to `miditin-1-<OS>-<sha>.zip` and
-  attaches that to a GitHub Release.
+  with them. The `release` job zips each artifact to `miditin-1-<OS>-<sha>.zip` and attaches
+  them to the release. It needs every platform green: one failed build, no release.
 
 ## The printed manual
 
