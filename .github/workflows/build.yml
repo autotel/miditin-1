@@ -1,0 +1,113 @@
+name: Build
+
+# The release build: VST3 + Standalone + the printed manual, zipped. Local builds (build.sh) do not
+# print the manual; ./print-manual.sh does that on demand.
+#
+# Versions are commit hashes (the window shows the build's sha), so every push to main builds and
+# its bundle is named by that sha. A tag also publishes a GitHub Release with the zip attached.
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*', '[0-9]+.[0-9]+.[0-9]+' ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Linux
+    # Linux only: the platform the plugin is developed and checked on. macOS/Windows would be more
+    # matrix rows, as in ../Spectral hold plugin's workflow, once someone has run them.
+    runs-on: ubuntu-latest
+    steps:
+      # CMakeLists.txt finds JUCE and the librarian as siblings (../JUCE, ../autotel-plugin-presets-
+      # librarian), so all three are checked out side by side.
+      - name: Checkout plugin
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Short sha
+        id: sha
+        run: echo "short=$(git -C plugin rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout JUCE 8.0.12
+        uses: actions/checkout@v4
+        with:
+          repository: juce-framework/JUCE
+          ref: 8.0.12
+          path: JUCE
+
+      # The librarian repo is private: the default token only reads this repo, so a fine-grained
+      # token with read access to it goes in the LIBRARIAN_TOKEN secret.
+      - name: Checkout presets librarian
+        uses: actions/checkout@v4
+        with:
+          repository: autotel/autotel-plugin-presets-librarian
+          path: autotel-plugin-presets-librarian
+          token: ${{ secrets.LIBRARIAN_TOKEN || github.token }}
+
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pkg-config libasound2-dev libx11-dev libxext-dev libxinerama-dev \
+            libxrandr-dev libxcursor-dev libfreetype-dev libfontconfig1-dev libgl1-mesa-dev \
+            pandoc
+
+      - name: Configure
+        run: cmake -S plugin -B plugin/build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: >
+          cmake --build plugin/build --parallel
+          --target Miditin_VST3 Miditin_Standalone MiditinTests MiditinHostCheck
+
+      - name: Test suite
+        run: plugin/build/MiditinTests_artefacts/Release/MiditinTests
+
+      - name: VST3 host check
+        run: >
+          plugin/build/MiditinHostCheck_artefacts/Release/MiditinHostCheck
+          "plugin/build/Miditin_artefacts/Release/VST3/miditin 1.vst3"
+
+      # Stage under a named folder and upload its parent: pointing upload-artifact at the .vst3
+      # bundle itself zips its contents, a bare Contents/ with no name on it.
+      # The OFL text goes along because the binaries embed the IBM Plex fonts (CLAUDE.md).
+      - name: Stage release bundle
+        run: |
+          mkdir -p dist/miditin-1
+          cp -R "plugin/build/Miditin_artefacts/Release/VST3/miditin 1.vst3" dist/miditin-1/
+          cp "plugin/build/Miditin_artefacts/Release/Standalone/miditin 1" dist/miditin-1/
+          cp plugin/Resources/Fonts/OFL-IBMPlex.txt dist/miditin-1/
+          plugin/print-manual.sh "$PWD/dist/miditin-1/miditin 1 manual.pdf"
+
+      - name: Upload release bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: miditin-1-Linux-${{ steps.sha.outputs.short }}
+          path: dist
+
+  release:
+    name: Publish GitHub release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download bundles
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Zip each bundle
+        run: |
+          cd artifacts
+          for d in miditin-1-*; do
+            ( cd "$d" && zip -rq "../${d}.zip" miditin-1 )
+          done
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*.zip
+          generate_release_notes: true

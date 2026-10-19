@@ -8,4 +8,5 @@ phase in `tasks.md` has durable knowledge to record, not before.
 |---|---|
 | [architecture.md](architecture.md) | threads, the clock, voice pool, note tracking, params vs Patch |
 | [testing.md](testing.md) | the suite, sanitizer, VST3 host check, offscreen snapshots, the manual REAPER pass |
+| [release.md](release.md) | the CI release build, its zip, the printed manual |
 | [history.md](history.md) | decisions that were made and reversed, so they are not remade |

@@ -30,6 +30,9 @@ searching from scratch.
 ./build.sh hostcheck # load the built VST3 headlessly: MIDI out, state, bypass
 ```
 UI checks: `MiditinSnap <dir>` renders PNGs offscreen — see [wiki/testing.md](wiki/testing.md).
+User manual: `docs/MANUAL.md`. A user-visible change updates it and re-renders its pictures
+(`MiditinSnap --manual docs/images`). `./print-manual.sh [out.pdf]` prints it; release zips come from
+CI with the PDF inside — see [wiki/release.md](wiki/release.md).
 RelWithDebInfo deliberately — a Debug VST3 in a DAW is far slower and has `jassert` armed (a fired
 jassert is a SIGTRAP that takes the host down). `cmake --preset debug` → `build-debug/`, for gdb
 only. Standalone: `./run-built.sh`. VST3: `build/Miditin_artefacts/RelWithDebInfo/VST3/miditin 1.vst3`
