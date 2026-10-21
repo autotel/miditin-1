@@ -9,6 +9,14 @@ turns the generator's steps into real notes, in a scale or on the notes you hold
 Nothing comes out while no note is held. Lift your hands and it stops. It makes no sound itself
 (apart from an optional preview synth), so you put a synth after it.
 
+**TLDR quick start**
+
+- Load the plugin up in your DAW (reaper, ableton, etc)
+- Fool around with the parameters, see what happens.
+- Play chords through the plugin
+- Open the presets library by clicking on the preset title (e.g. Wheel arpeggio)
+- Explore the presets, see what they do and what they look like.
+
 **Contents**
 
 1. [Getting started](#1-getting-started)
